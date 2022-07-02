@@ -1,3 +1,37 @@
-<div>
-    <!-- Simplicity is the consequence of refined emotions. - Jean D'Alembert -->
-</div>
+<header class="flex items-center justify-between h-20 px-4 bg-white shadow-lg space-x-28 lg:pl-28 lg:pr-36 shadow-gray-300">
+    <!-- Site logo -->
+    <a href="/" class="inline-flex items-center">
+        <img
+            src="{{ asset('assets/img/logo.png') }}"
+            class="h-10"
+            alt="{{ config('app.name') }}"
+        />
+    </a>
+
+    <!-- Available crypto items -->
+    <div class="items-center justify-end flex-1 hidden space-x-3 md:flex">
+        @foreach ($cryptos as $crypto)
+            @php
+                $__available = CStr::isValidBoolean($crypto["available"]) && $crypto["available"];
+                $__url = CStr::isValidString($crypto["url"]) ? $crypto["url"] : "#";
+                $__tooltip_id = CStr::id('tooltip');
+            @endphp
+            <a
+                class="inline-flex items-center h-8 text-sm text-white px-7 {{ $__available ? "bg-blue-500" : "bg-blue-400" }}"
+                href="{{ $__url }}"
+                @unless ($__available) data-tooltip-target="{{ $__tooltip_id }}" @endunless
+                data-tooltip-target="tooltip-dark"
+            >
+                {{ $crypto['name'] }}
+            </a>
+            @unless($__available)
+                <x-flowbite.tooltip id="{{ $__tooltip_id }}">Comming Soon</x-flowbite.tooltip>
+            @endunless
+        @endforeach
+    </div>
+
+    <!-- Info links -->
+    <div class="flex items-center justify-end space-x-2">
+        <a href="{{ url('/faq') }}">FAQ</a>
+    </div>
+</header>

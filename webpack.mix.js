@@ -30,6 +30,7 @@ mix
   .sass("resources/scss/app.scss", "public/dist/css/style.min.css", undefined, [
     require("tailwindcss"),
   ])
+  .sass("resources/scss/notus.scss", "public/dist/css/notus.min.css")
   .extract() // Extract vendor libraries into separate bundle which can be cached
   .disableNotifications();
 
@@ -37,8 +38,5 @@ if (mix.inProduction()) {
   mix.version(); // Enable cache busting
 } else {
   // Enable live reloading and HMR in development
-  mix.sourceMaps().browserSync({
-    proxy: "localhost:8080",
-    open: false,
-  });
+  mix.sourceMaps();
 }

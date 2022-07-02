@@ -1,0 +1,100 @@
+// Prevent text selection
+.no-select {
+  -webkit-touch-callout: none; // iOS Safari
+  -webkit-user-select: none; // Safari
+  -khtml-user-select: none; // Konqueror HTML
+  -moz-user-select: none; // Old versions of Firefox
+  -ms-user-select: none; // Internet Explorer/Edge
+  // Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox
+  user-select: none;
+}
+
+// Lock scroll bars
+.no-scroll {
+  overflow: hidden !important;
+  &-x {
+    overflow-x: hidden !important;
+  }
+  &-y {
+    overflow-y: hidden !important;
+  }
+}
+
+// Background blur
+.bg-blur {
+  &-slight {
+    backdrop-filter: blur(1.5px);
+  }
+  &-light {
+    backdrop-filter: blur(3px);
+  }
+  &-medium {
+    backdrop-filter: blur(6px);
+  }
+  &-strong {
+    backdrop-filter: blur(10px);
+  }
+  &-stronger {
+    backdrop-filter: blur(20px);
+  }
+  &-strongest {
+    backdrop-filter: blur(30px);
+  }
+  &-ultra {
+    backdrop-filter: blur(40px);
+  }
+  &-max {
+    backdrop-filter: blur(50px);
+  }
+  backdrop-filter: blur(4px);
+}
+
+// Center element in relative parent
+.abs-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// Custom flex alignments
+.flex {
+  &-newline {
+    flex-basis: 100%;
+  }
+  &-sameline {
+    flex-basis: auto !important;
+  }
+  &-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  &-inline-center {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+  }
+  @media screen and (min-width: 992px) {
+    &-sameline-lg {
+      flex-basis: auto !important;
+    }
+  }
+}
+
+// Custom text shadow rules
+.text-shadow {
+  --shadow-width: 1px;
+  --shadow-blur: 2px;
+  &-none {
+    text-shadow: none;
+  }
+  &-medium {
+    --shadow-width: 2px;
+  }
+  &-strong {
+    --shadow-width: 2px;
+    --shadow-blur: 4px;
+  }
+  text-shadow: var(--shadow-width) var(--shadow-width) var(--shadow-blur) rgba(0, 0, 0, 0.6);
+}

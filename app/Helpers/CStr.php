@@ -78,4 +78,14 @@ class CStr
 
         return implode(' ', $attributes);
     }
+
+    public static function id(string $field = "unlabeled_element"): string
+    {
+        return sprintf(
+            "%s__%s_%s",
+            $field,
+            hash("crc32b", microtime() . random_int(0, 1000)),
+            hash("crc32b", microtime() . random_int(0, 10000))
+        );
+    }
 }

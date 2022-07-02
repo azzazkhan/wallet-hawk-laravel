@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "flowbite": "^1.4.7",
-    "jquery": "^3.6.0"
+    "jquery": "^3.6.0",
+    "notus": "^0.3.2"
   }
 }
