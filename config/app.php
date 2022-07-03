@@ -17,6 +17,8 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'description' => env('APP_DESCRIPTION', 'PHP Framework for Web Artisan'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

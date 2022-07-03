@@ -4,10 +4,11 @@
         type="text"
         name="wallet"
         class="{{ CStr::classes([
-            'flex-1 px-3 font-medium rounded-l-md' => true,
-            'h-12 border-none shadow' => !$small,
-            'h-10 text-sm border border-gray-200' => $small,
+            'flex-1 px-3 font-medium rounded-l-md !outline-none' => true,
+            'h-12 !border-none shadow' => !$small,
+            'h-10 text-sm border !border-gray-200' => $small,
         ]) }}"
+        value="{{ request()->query('wallet') }}"
         placeholder="Enter a wallet address here"
     />
     <button type="submit" role="button" class="{{ CStr::classes([

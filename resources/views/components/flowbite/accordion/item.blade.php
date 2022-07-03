@@ -6,7 +6,7 @@
 <h2 id="{{ $__label_id }}">
     <button
         type="button"
-        class="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 dark:border-gray-700 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-gray-800"
+        class="flex items-center justify-between w-full px-4 py-5 font-semibold text-left text-gray-500 border-b border-gray-200 rounded-lg dark:border-gray-700 dark:text-gray-400"
         data-accordion-target="#{{ $__content_id }}"
         aria-expanded="true"
         aria-controls="{{ $__content_id }}"
@@ -31,7 +31,7 @@
     class="hidden"
     aria-labelledby="{{ $__label_id }}"
 >
-    <div class="py-5 border-b border-gray-200 dark:border-gray-700">
+    <div class="px-4 py-5 text-gray-500 border-b border-gray-200 dark:border-gray-700">
         {{ $slot }}
     </div>
 </div>

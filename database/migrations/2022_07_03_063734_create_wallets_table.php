@@ -15,6 +15,20 @@ return new class extends Migration
     {
         Schema::create('wallets', function (Blueprint $table) {
             $table->id();
+            $table->string('wallet_id')->unique();
+
+            // Have we indexed all the data?
+            $table->boolean('opensea_index')->default(false);
+            $table->boolean('erc20_index')->default(false);
+
+            // Last requested
+            $table->timestamp('last_opensea_request')->nullable();
+            $table->timestamp('last_etherscan_request')->nullable();
+
+            // Last paginated
+            $table->timestamp('last_opensea_pagination')->nullable();
+            $table->timestamp('last_etherscan_pagination')->nullable();
+
             $table->timestamps();
         });
     }

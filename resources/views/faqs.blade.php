@@ -1,6 +1,6 @@
 <x-app>
-    <x-layout.page class="flex justify-center mx-auto bg-red-500">
-        <x-flowbite.accordion.flush>
+    <x-layout.page>
+        <x-flowbite.accordion.flush class="w-full mx-auto md:w-2/3 xl:w-1/2">
             <x-flowbite.accordion.item label="Why was this created?">
                 Being on the receiving end of fraud and embezzlement in crypto made this site possible. I worked with auditors to develop a tool that will help them track transactions of bad actors in this space.
             </x-flowbite.accordion.item>
