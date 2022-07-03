@@ -1,5 +1,5 @@
 @props(['small' => false])
-<form action="{{ url('/transactions') }}" {{ $attributes->merge(['class' => 'flex']) }}>
+<form action="{{ route('transactions') }}" {{ $attributes->merge(['class' => 'flex']) }}>
     <input
         type="text"
         name="wallet"

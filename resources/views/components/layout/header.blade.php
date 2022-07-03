@@ -32,6 +32,6 @@
 
     <!-- Info links -->
     <div class="flex items-center justify-end space-x-2">
-        <a href="{{ url('/faq') }}">FAQ</a>
+        <a href="{{ route('faqs') }}">FAQs</a>
     </div>
 </header>
