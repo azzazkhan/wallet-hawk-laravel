@@ -1,13 +1,13 @@
 <?php
 
-namespace App\View\Components\Layout;
+namespace App\View\Components\Forms\Filters\Desktop;
 
 use App\Helpers\JSON;
 use Illuminate\View\Component;
 
-class Header extends Component
+class Form extends Component
 {
-    public array|null $cryptos = null;
+    public array $filters = [];
 
     /**
      * Create a new component instance.
@@ -16,7 +16,7 @@ class Header extends Component
      */
     public function __construct()
     {
-        $this->cryptos = JSON::parseFile('cryptos.json')['available'];
+        $this->filters = JSON::parseFile('filters.json');
     }
 
     /**
@@ -26,6 +26,6 @@ class Header extends Component
      */
     public function render()
     {
-        return view('components.layout.header');
+        return view('components.forms.filters.desktop.form');
     }
 }

@@ -1,0 +1,17 @@
+{
+  "available": [
+    {
+      "name": "Ethereum",
+      "available": true,
+      "url": "#"
+    },
+    {
+      "name": "Bitcoin",
+      "available": false
+    },
+    {
+      "name": "Solana",
+      "available": false
+    }
+  ]
+}

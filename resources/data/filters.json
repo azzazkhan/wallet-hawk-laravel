@@ -1,0 +1,32 @@
+[
+  {
+    "label": "Schema",
+    "id": "schema",
+    "options": [
+      { "label": "ERC20", "value": "ERC20" },
+      { "label": "ERC721/ERC1155", "value": "opensea" }
+    ]
+  },
+  {
+    "label": "Event",
+    "id": "event_type",
+    "options": [
+      { "label": "Created", "value": "created" },
+      { "label": "Successful", "value": "successful" },
+      { "label": "Cancelled", "value": "cancelled" },
+      { "label": "Bid Entered", "value": "bid_entered" },
+      { "label": "Bid Withdrawn", "value": "bid_withdrawn" },
+      { "label": "Transfer", "value": "transfer" },
+      { "label": "Offer Ended", "value": "offer_ended" },
+      { "label": "Approved", "value": "approved" }
+    ]
+  },
+  {
+    "label": "Direction",
+    "id": "direction",
+    "options": [
+      { "label": "IN", "value": "IN" },
+      { "label": "OUT", "value": "OUT" }
+    ]
+  }
+]
