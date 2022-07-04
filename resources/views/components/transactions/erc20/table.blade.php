@@ -67,3 +67,4 @@
         </x-flowbite.table.row>
     @endforeach
 </x-flowbite.table.component>
+

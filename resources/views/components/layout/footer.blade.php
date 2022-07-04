@@ -1,6 +1,7 @@
 @php $__donate_modal_id = CStr::id('donate_modal') @endphp
 <footer class="flex items-center justify-between px-5 mt-auto bg-white drop-shadow-2xl md:px-28 sm:px-12 h-28">
-    <form class="md:min-w-[300px]">
+    <form action="{{ route('subscribe') }}" method="POST" class="md:min-w-[300px]">
+        @csrf
         <label htmlFor="newsletterEmailInput" class="text-xs font-medium">
             Sign up for our emails!
         </label>

@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('opensea_transactions', function (Blueprint $table) {
             $table->id();
-            $table->enum('schema', ['ERC721', 'ERC1155']);
+            $table->enum('schema', config('hawk.opensea.event.schema'));
             $table->unsignedInteger('event_id')->unique();
             $table->enum('event_type', config('hawk.opensea.event.types'));
             $table->timestamp('event_timestamp');

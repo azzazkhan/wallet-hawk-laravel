@@ -40,11 +40,11 @@ class Wallet extends Model
      * @var array
      */
     protected $casts = [
-        'opensea_index' => 'boolean',
-        'erc20_index' => 'boolean',
-        'last_opensea_request' => 'datetime:U',
-        'last_etherscan_request' => 'datetime:U',
-        'last_opensea_pagination' => 'datetime:U',
+        'opensea_index'             => 'boolean',
+        'erc20_index'               => 'boolean',
+        'last_opensea_request'      => 'datetime:U',
+        'last_etherscan_request'    => 'datetime:U',
+        'last_opensea_pagination'   => 'datetime:U',
         'last_etherscan_pagination' => 'datetime:U',
     ];
 }

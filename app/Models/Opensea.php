@@ -39,38 +39,27 @@ class Opensea extends Model
     ];
 
     /**
-     * The model's default values for attributes.
-     *
-     * @var array
-     */
-    protected $attributes = [
-        'media' => [],
-        'payment_token' => [],
-    ];
-
-    /**
      * The attributes that should be cast.
      *
      * @var array
      */
     protected $casts = [
         'schema'          => 'string',
+        'event_id'        => 'integer',
         'event_type'      => 'string',
-        'asset_id'        => 'integer',
+        'event_timestamp' => 'immutable_datetime:U',
         'media'           => 'array',
         'asset'           => 'array',
         'payment_token'   => 'array',
-        'event'           => 'array',
         'contract'        => 'array',
         'accounts'        => 'array',
-        'event_id'        => 'integer',
-        'event_timestamp' => 'immutable_datetime:U',
-        'schema'          => 'string',
-        'event_type'      => 'string',
     ];
 
-    public static function forWallet(string $wallet_id, int $limit = 0, string $type = null): Builder
-    {
+    public static function forWallet(
+        string $wallet_id,
+        int|null $limit = 0,
+        string $type = null
+    ): Builder {
         return static::query()
             // If event type is specified then grab events of only specified event type
             ->when(
@@ -85,8 +74,8 @@ class Opensea extends Model
                     ->orWhere('accounts->winner', $wallet_id)
                     ->orWhere('accounts->seller', $wallet_id);
             })
-            ->sort('event_timestamp', 'desc')
+            ->orderBy('event_timestamp', 'desc')
             // If limit is specified then limit the records
-            ->when($limit > 0, fn (Builder $builder) => $builder->limit($limit));
+            ->when($limit && $limit > 0, fn (Builder $builder) => $builder->limit($limit));
     }
 }

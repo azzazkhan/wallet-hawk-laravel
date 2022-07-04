@@ -13,15 +13,24 @@ class TransactionsController extends Controller
 
     public function index(Request $request)
     {
-        $wallet_id = $request->validate([
+        $validated = $request->validate([
             'wallet' => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
             'event'  => ['string', Rule::in(config('hawk.opensea.event.types'))]
-        ])['wallet'];
+        ]);
 
-        dd($this->fetchEvents($wallet_id));
+        $schema = $request->query('schema'); // Check which token user is searching for
+
+        // Show ERC20 records if they are willing to see them
+        if (strtolower($schema) === 'erc20')
+            return view('transactions', [
+                'schema'       => 'ERC20',
+                'transactions' => JSON::parseFile('erc20.json')['transactions'],
+            ]);
+
 
         return view('transactions', [
-            'transactions' => JSON::parseFile('erc20.json')['transactions']
+            'schema'       => 'ERC721-ERC1155',
+            'transactions' => $this->fetchOpenseaEvents($validated['wallet'], $validated['event'] ?? null),
         ]);
     }
 }

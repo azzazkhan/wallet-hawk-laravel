@@ -4,13 +4,19 @@
             'class' => 'items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow md:flex'
         ])
     }}>
+    <input type="hidden" name="wallet" value="{{ request()->query('wallet') }}" />
     @foreach ($filters as $filter)
         <x-forms.filters.desktop.field name="{{ $filter['id'] }}" label="{{ $filter['label'] }}">
             @foreach ($filter['options'] as $option)
                 @if (CStr::isValidString($option))
                     <option>{{ $option }}</option>
                 @else
-                    <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                    <option
+                        value="{{ $option['value'] }}"
+                        @selected($option['value'] == request()->query($filter['id']))
+                    >
+                        {{ $option['label'] }}
+                    </option>
                 @endif
             @endforeach
         </x-forms.filters.desktop.field>

@@ -11,31 +11,39 @@
     </button>
 
     <x-flowbite.modal.popup id="{{ $__modal_id }}">
-        <div class="flex flex-col space-y-4">
-            @foreach ($filters as $filter)
-                <x-forms.filters.mobile.field name="{{ $filter['id'] }}" label="{{ $filter['label'] }}">
-                    @foreach ($filter['options'] as $option)
-                        @if (CStr::isValidString($option))
-                            <option>{{ $option }}</option>
-                        @else
-                            <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
-                        @endif
-                    @endforeach
-                </x-forms.filters.mobile.field>
-            @endforeach
-        </div>
+        <form action="{{ route('transactions') }}">
+            <input type="hidden" name="wallet" value="{{ request()->query('wallet') }}" />
+            <div class="flex flex-col space-y-4">
+                @foreach ($filters as $filter)
+                    <x-forms.filters.mobile.field name="{{ $filter['id'] }}" label="{{ $filter['label'] }}">
+                        @foreach ($filter['options'] as $option)
+                            @if (CStr::isValidString($option))
+                                <option>{{ $option }}</option>
+                            @else
+                                <option
+                                    value="{{ $option['value'] }}"
+                                    @selected($option['value'] == request()->query($filter['id']))
+                                >
+                                    {{ $option['label'] }}
+                                </option>
+                            @endif
+                        @endforeach
+                    </x-forms.filters.mobile.field>
+                @endforeach
+            </div>
 
-        <div class="flex mt-6 space-x-2">
-            <button
-                data-modal-toggle="{{ $__modal_id }}"
-                type="button"
-                class="text-white bg-blue-500 hover:bg-blue-600 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
-            >
-                Apply
-            </button>
-            <x-flowbite.modal.cancel id="{{ $__modal_id }}">
-                Cancel
-            </x-flowbite.modal.cancel>
-        </div>
+            <div class="flex mt-6 space-x-2">
+                <button
+                    data-modal-toggle="{{ $__modal_id }}"
+                    type="submit"
+                    class="text-white bg-blue-500 hover:bg-blue-600 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
+                >
+                    Apply
+                </button>
+                <x-flowbite.modal.cancel id="{{ $__modal_id }}">
+                    Cancel
+                </x-flowbite.modal.cancel>
+            </div>
+        </form>
     </x-flowbite.modal.popup>
 </div>

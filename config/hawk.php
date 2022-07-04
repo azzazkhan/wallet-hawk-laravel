@@ -3,7 +3,7 @@
 return [
     'opensea' => [
         'event' => [
-            'types' => [
+            'types'    => [
                 'created',
                 'successful',
                 'cancelled',
@@ -13,6 +13,7 @@ return [
                 'offer_entered',
                 'approve',
             ],
+            'schema'   => ['ERC721', 'ERC1155'],
             'per_page' => (int) env('OPENSEA_RECORDS_PER_PAGE', 20)
         ],
         'network' => [
