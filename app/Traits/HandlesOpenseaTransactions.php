@@ -2,41 +2,112 @@
 
 namespace App\Traits;
 
+use App\Models\Opensea;
 use App\Models\Wallet;
+use Exception;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 trait HandlesOpenseaTransactions
 {
-    private function fetchEvents(string $account_address, string $event_type = null): array
+    private function fetchEvents(string $wallet_id, string $event_type = null): Collection|null
     {
-        // Fetch the wallet document
-        $wallet = Wallet::where('wallet_id', $account_address)->first();
+        if ($this->hasCooledDown($wallet_id)) {
+            // Fetch transactions for requested wallet address
+            $response = $this->fetchFromAPI($wallet_id, $event_type);
 
-        if ($wallet) {
-            // Check if we have already fetched all transactions for this wallet or not
-            if ($wallet->opensea_index) {
-                Wallet::getForWallet($account_address);
-            }
+            // Invalid data or API calls limit reached
+            if (is_null($response) || !array_key_exists('asset_events', $response))
+                throw new TooManyRequestsHttpException(1, 'Please try again in a few moments');
+
+            return $this->saveRawEvents($response['asset_events'])['events'];
         }
 
+        // Fetch events from database
+        return Opensea::forWallet($wallet_id, $event_type, config('hawk.opensea.event.per_page'))
+            ->get();
+    }
 
-        // Wallet details does not exist in our records, this means the
-        // transactions for this wallet are being searched for first time
-        if (!$wallet)
-            // Create new record against requested wallet address
-            $wallet = Wallet::create(['wallet_id' => $account_address]);
+    private function fetchFromAPI(string $wallet_id, string $type = null): array|null
+    {
+        if (!$this->incrementCounter()) return null;
 
-
-        // Fetch transactions for requested wallet address
         $response = Http::retry(3, 300)
             ->acceptJson()
             ->withHeaders([
-                "X-API-KEY" => env('OPENSEA_API_KEY')
+                "X-API-KEY" => config('hawk.opensea.api_key')
             ])
-            ->get('https://api.opensea.io/api/v1/events', compact('account_address', 'event_type'));
+            ->get('https://api.opensea.io/api/v1/events', [
+                'account_address' => $wallet_id,
+                'event_type'      => $type
+            ]);
+
+        $this->decrementCounter();
+
+        if ($response->serverError())
+            return null;
 
         return $response->json();
+    }
+
+    /**
+     * ========================================
+     * UTILITY FUNCTIONS (PARSING, SAVING...)
+     * ========================================
+     */
+    private function saveEvents(Collection $events): array
+    {
+        // dd($events->toArray());
+        // Check if any of passed events already exist in database or not
+        $existing_events = Opensea::where(
+            'event_id',
+            $events
+                ->map(fn ($event) => $event['event_id'])
+                ->toArray()
+        )
+            ->select(['event_id'])
+            ->get();
+
+        // If no record exists then save and return them
+        if (!$existing_events || $existing_events->empty())
+            return [
+                'uniques'  => count($events),
+                'existing' => 0,
+                'events'   => Opensea::create($events->toArray())
+            ];
+
+        // Grab event IDs from existing records (for filtering)
+        $existing_ids = $existing_events
+            ->map(fn ($event) => $event['event_id']);
+
+        // Get only unique records that do not exist in database
+        $uniques = $events->filter(fn ($event) => $existing_ids->contains($event['event_id']));
+
+        // All records already exist in database, return those
+        if (!$uniques || $uniques->empty()) return [
+            'events'   => $existing_events,
+            'existing' => $existing_events->count(),
+            'uniques'  => 0,
+        ];
+
+        // Return all events
+        return [
+            'events'   => array_merge($existing_events, Opensea::create($uniques)),
+            'existing' => $existing_events->count(),
+            'uniques'  => 0,
+        ];
+    }
+
+    private function saveRawEvents(array $events): array
+    {
+        // Parsed events into indexable form
+        $events = collect($events)
+            ->map(fn ($event) => $this->parseEvent($event));
+
+        return $this->saveEvents($events);
     }
 
     private function parseEvent(array $event): array
@@ -48,7 +119,6 @@ trait HandlesOpenseaTransactions
         return [
             'schema'     => strtoupper($contract['schema_name']),
             'event_type' => strtolower($event['event_type']),
-            'asset_id'   => (int) $asset['id'],
 
             'media'           => [
                 'image' => [
@@ -63,16 +133,17 @@ trait HandlesOpenseaTransactions
                 ],
             ],
             'asset'           => [
+                'id'            => (int) $asset['id'],
                 'name'          => $asset['name'],
                 'description'   => $asset['description'] ?: null,
                 'external_link' => $asset['external_link'] ?: null,
             ],
-            'payment_token'   => $payment_token ? [
-                'decimals' => (int) $payment_token['decimals'],
-                'symbol'   => $payment_token['symbol'],
-                'eth'      => (float) $payment_token['eth'],
-                'usd'      => (float) $payment_token['usd'],
-            ] : null,
+            // 'payment_token'   => $payment_token ? [
+            //     'decimals' => (int) $payment_token['decimals'],
+            //     'symbol'   => $payment_token['symbol'],
+            //     'eth'      => (string) $payment_token['eth_price'],
+            //     'usd'      => (string) $payment_token['usd_price'],
+            // ] : null,
             'contract'        => [
                 'address' => $contract['address'],
                 'type'    => $contract['asset_contract_type'],
@@ -85,14 +156,74 @@ trait HandlesOpenseaTransactions
                 'winner' => $event['winner_account'] ? ($event['winner_account']['address'] ?: null) : null,
             ],
 
-            'event_id'        => $event['event_id'],
+            'event_id'        => $event['id'],
             'event_timestamp' => (int) (new Carbon($event['event_timestamp']))->format('U'),
         ];
     }
+
+    /**
+     * ===================================
+     * WALLET LOCKOUT TIMER MANAGEMENT
+     * ===================================
+     */
+    private function hasCooledDown(string $wallet_id): bool
+    {
+        $wallet = Wallet::where('wallet_id', $wallet_id)->first();
+
+        // The wallet has never been searched before
+        if (!$wallet) return true;
+
+        return $wallet->last_opensea_request + config('hawk.opensea.limits.default') <=
+            (int) now()->format('U');
+    }
+
     private function updateLockoutTimer(Wallet $wallet)
     {
     }
+
     private function updatePaginationTimer(Wallet $wallet)
     {
+    }
+
+
+    /**
+     * ==============================
+     * API CALLS COUNTER MANAGEMENT
+     * ==============================
+     */
+    private function incrementCounter(): bool
+    {
+        if (!$this->canIncrement()) return false;
+        Cache::increment('opensea_counter');
+
+        return true;
+    }
+
+    private function decrementCounter(): void
+    {
+        $counter = Cache::get('opensea_counter', function () {
+            Cache::put('opensea_counter', 0);
+
+            return 0;
+        });
+
+        // If somehow counter has gone below zero then set it back to zero
+        if ($counter < 0)
+            Cache::put('opensea_counter', 0);
+
+        // Decrement the counter if it could be
+        if ($counter > 1)
+            Cache::decrement('opensea_counter');
+    }
+
+    private function canIncrement(): bool
+    {
+        $counter = Cache::get('opensea_counter', function () {
+            Cache::put('opensea_counter', 0);
+
+            return 0;
+        });
+
+        return $counter < config('hawk.opensea.network.max_calls');
     }
 }

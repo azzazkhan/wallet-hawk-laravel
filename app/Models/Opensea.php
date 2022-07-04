@@ -69,16 +69,24 @@ class Opensea extends Model
         'event_type'      => 'string',
     ];
 
-    public static function forWallet(string $wallet_id, int $limit = 0): Builder
+    public static function forWallet(string $wallet_id, int $limit = 0, string $type = null): Builder
     {
-        $query = static::where('accounts->from', $wallet_id)
-            ->orWhere('accounts->to', $wallet_id)
-            ->orWhere('accounts->winner', $wallet_id)
-            ->orWhere('accounts->seller', $wallet_id);
-
-        if ($limit > 0)
-            $query = $query->limit($limit);
-
-        return $query;
+        return static::query()
+            // If event type is specified then grab events of only specified event type
+            ->when(
+                is_string($type) && in_array($type, config('hawk.opensea.event.types')),
+                fn (Builder $builder) => $builder->where('event_type', $type)
+            )
+            // Grab records for passed wallet address
+            ->where(function (Builder $builder) use ($wallet_id) {
+                return $builder
+                    ->where('accounts->from', $wallet_id)
+                    ->orWhere('accounts->to', $wallet_id)
+                    ->orWhere('accounts->winner', $wallet_id)
+                    ->orWhere('accounts->seller', $wallet_id);
+            })
+            ->sort('event_timestamp', 'desc')
+            // If limit is specified then limit the records
+            ->when($limit > 0, fn (Builder $builder) => $builder->limit($limit));
     }
 }
