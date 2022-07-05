@@ -38,6 +38,8 @@ trait HandlesOpenseaTransactions
         string $wallet_id,
         string $type = null,
         string $cursor = null,
+        int $before = null,
+        int $after = null,
     ): array|null {
         if (!$this->incrementOpenseaCounter())
             return null;
@@ -51,6 +53,8 @@ trait HandlesOpenseaTransactions
                 'account_address' => $wallet_id,
                 'event_type'      => in_array($type, config('hawk.opensea.event.types')) ? $type : null,
                 'cursor'          => preg_match('/(([A-z0-9])=?){60,}$/', $cursor) ? $cursor : null,
+                'occurred_before' => $before,
+                'occurred_after'  => $after,
             ]);
 
         $this->decrementOpenseaCounter();
@@ -196,7 +200,7 @@ trait HandlesOpenseaTransactions
         ]);
     }
 
-    private function updateOpenseaPaginationTimer(Wallet $wallet)
+    private function updateOpenseaPaginationTimer(string $wallet_id)
     {
     }
 

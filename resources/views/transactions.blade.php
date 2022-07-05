@@ -27,7 +27,7 @@
                     @endphp
 
                     {{-- If we are not in pagination view then disable next records button --}}
-                    @if ($paginated ?? true)
+                    @if (!CStr::isValidString($paginated) && !CStr::isValidString($previous))
                         <a role="button" class="{{ $__classes['disabled'] }}">Next</a>
                     @else
                         <a
