@@ -34,9 +34,13 @@ trait HandlesOpenseaTransactions
             ->get();
     }
 
-    private function fetchFromOpenseaAPI(string $wallet_id, string $type = null): array|null
-    {
-        if (!$this->incrementOpenseaCounter()) return null;
+    private function fetchFromOpenseaAPI(
+        string $wallet_id,
+        string $type = null,
+        string $cursor = null,
+    ): array|null {
+        if (!$this->incrementOpenseaCounter())
+            return null;
 
         $response = Http::retry(3, 300)
             ->acceptJson()
@@ -45,7 +49,8 @@ trait HandlesOpenseaTransactions
             ])
             ->get('https://api.opensea.io/api/v1/events', [
                 'account_address' => $wallet_id,
-                'event_type'      => $type
+                'event_type'      => in_array($type, config('hawk.opensea.event.types')) ? $type : null,
+                'cursor'          => preg_match('/(([A-z0-9])=?){60,}$/', $cursor) ? $cursor : null,
             ]);
 
         $this->decrementOpenseaCounter();

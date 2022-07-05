@@ -57,8 +57,8 @@ class Opensea extends Model
 
     public static function forWallet(
         string $wallet_id,
+        string $type = null,
         int|null $limit = 0,
-        string $type = null
     ): Builder {
         return static::query()
             // If event type is specified then grab events of only specified event type

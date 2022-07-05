@@ -9,8 +9,9 @@
   },
   {
     "label": "Event",
-    "id": "event_type",
+    "id": "event",
     "options": [
+      { "label": "--------", "value": "" },
       { "label": "Created", "value": "created" },
       { "label": "Successful", "value": "successful" },
       { "label": "Cancelled", "value": "cancelled" },
@@ -25,6 +26,7 @@
     "label": "Direction",
     "id": "direction",
     "options": [
+      { "label": "--------", "value": "" },
       { "label": "IN", "value": "IN" },
       { "label": "OUT", "value": "OUT" }
     ]
