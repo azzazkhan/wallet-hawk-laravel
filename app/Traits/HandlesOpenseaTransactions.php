@@ -357,12 +357,12 @@ trait HandlesOpenseaTransactions
         // If the wallet record does not exists then create a new one
         if (!$wallet)
             Wallet::create([
-                'wallet_id'     => $wallet_id,
-                'opensea_index' => true,
+                'wallet_id'       => $wallet_id,
+                'opensea_indexed' => true,
             ]);
 
         else
-            $wallet->update(['opensea_index' => true]);
+            $wallet->update(['opensea_indexed' => true]);
     }
 
     /**

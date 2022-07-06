@@ -19,7 +19,7 @@ return new class extends Migration
 
             // Have we indexed all the data?
             $table->boolean('opensea_indexed')->default(false);
-            $table->boolean('erc20_indexed')->default(false);
+            $table->boolean('etherscan_indexed')->default(false);
 
             // Last requested
             $table->timestamp('last_opensea_request')->nullable();
