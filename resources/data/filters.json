@@ -26,7 +26,7 @@
     "label": "Direction",
     "id": "direction",
     "options": [
-      { "label": "Both", "value": "" },
+      { "label": "Both", "value": "both" },
       { "label": "IN", "value": "IN" },
       { "label": "OUT", "value": "OUT" }
     ]

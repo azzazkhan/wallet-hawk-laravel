@@ -24,5 +24,12 @@ return [
             'pagination' => (int) env('OPENSEA_PAGINATION_LOCK_DURATION', 0)
         ],
         'api_key' => env('OPENSEA_API_KEY'),
+    ],
+    'etherscan' => [
+        'api_key' => env('ETHERSCAN_API_KEY'),
+        'limits' => [
+            'default' => (int) env('OPENSEA_LOCK_DURATION', 0),
+            'pagination' => (int) env('OPENSEA_PAGINATION_LOCK_DURATION', 0)
+        ],
     ]
 ];

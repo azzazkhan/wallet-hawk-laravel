@@ -2,15 +2,15 @@
 
 namespace App\Traits;
 
-use App\Models\Opensea;
 use App\Models\Wallet;
+use App\Models\Opensea;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\CssSelector\Exception\InternalErrorException;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
-use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 trait HandlesOpenseaTransactions
@@ -54,7 +54,7 @@ trait HandlesOpenseaTransactions
             ->get('https://api.opensea.io/api/v1/events', [
                 'account_address' => $wallet_id,
                 'event_type'      => in_array($type, config('hawk.opensea.event.types')) ? $type : null,
-                'cursor'          => preg_match('/(([A-z0-9])=?){60,}$/', $cursor) ? $cursor : null,
+                'cursor'          => $cursor && preg_match('/(([A-z0-9])=?){60,}$/', $cursor) ? $cursor : null,
                 'occurred_before' => $before,
                 'occurred_after'  => $after,
             ]);
@@ -212,10 +212,22 @@ trait HandlesOpenseaTransactions
         $wallet = Wallet::where('wallet_id', $wallet_id)->first();
 
         // The wallet has never been searched before
-        if (!$wallet) return true;
+        if (!$wallet) {
+            Log::debug('Wallet document does not exist, this means its first request', [
+                'cooled_down' => true
+            ]);
 
-        return (int) $wallet->last_opensea_request->format('U') + config('hawk.opensea.limits.default') <=
+            return true;
+        }
+
+        $cooled_down =  (int) $wallet->last_opensea_request->format('U') + config('hawk.opensea.limits.default') <=
             (int) now()->format('U');
+
+        Log::debug('Checking if wallet has cooled down or not', [
+            'cooled_down' => $cooled_down
+        ]);
+
+        return $cooled_down;
     }
 
     /**
@@ -229,15 +241,20 @@ trait HandlesOpenseaTransactions
     {
         $wallet = Wallet::where('wallet_id', $wallet_id)->first();
 
-        if (!$wallet) // If walled records does not exists then create one
+        if (!$wallet) { // If walled records does not exists then create one
+            Log::debug('Updating rate limiter timer, creating new record');
+
             Wallet::create([
                 'wallet_id' => $wallet_id,
                 'last_opensea_request' => now()->format('Y-m-d H:i:s')
             ]);
-        else // Update the timer on existing record
+        } else { // Update the timer on existing record
+            Log::debug('Updating rate limiter timer');
+
             $wallet->update([
                 'last_opensea_request' => now()->format('Y-m-d H:i:s')
             ]);
+        }
     }
 
     /**
@@ -252,6 +269,7 @@ trait HandlesOpenseaTransactions
     {
         $wallet = Wallet::where('wallet_id', $wallet_id)->first();
 
+
         if (!$wallet)
             throw new BadRequestException(
                 'Requested wallet\'s record does not exist! Please go to first page.'
@@ -263,8 +281,14 @@ trait HandlesOpenseaTransactions
             return true;
 
         // Compare pagination time with current time
-        return (int) $wallet->last_opensea_pagination->format('U') + config('hawk.opensea.limits.pagination') <=
+        $exhausted =  (int) $wallet->last_opensea_pagination->format('U') + config('hawk.opensea.limits.pagination') <=
             (int) now()->format('U');
+
+        Log::debug('Checking if pagination timer has exhausted for wallet or not', [
+            'exhausted' => $exhausted
+        ]);
+
+        return $exhausted;
     }
 
 
@@ -285,10 +309,11 @@ trait HandlesOpenseaTransactions
                 'Requested wallet\'s record does not exist! Please go to first page.'
             );
 
-
         $wallet->update([
             'last_opensea_pagination' => now()->format('Y-m-d H:i:s')
         ]);
+
+        Log::debug('Updating opensea pagination timer');
     }
 
     /**
@@ -302,6 +327,10 @@ trait HandlesOpenseaTransactions
     private function hasOpenseaIndexed(string $wallet_id): bool
     {
         $wallet = Wallet::where('wallet_id', $wallet_id)->first();
+
+        Log::debug('Checking if opensea wallet is indexed or not', [
+            'indexed' => $wallet?->opensea_indexed ? true : false,
+        ]);
 
         if (!$wallet) // Wallet does not exists!
             return false;
@@ -320,6 +349,10 @@ trait HandlesOpenseaTransactions
     private function setOpenseaIndexed(string $wallet_id): void
     {
         $wallet = Wallet::where('wallet_id', $wallet_id)->first();
+
+        Log::debug('Setting wallet as opensea indexed', [
+            'exists'  => $wallet ? true : false
+        ]);
 
         // If the wallet record does not exists then create a new one
         if (!$wallet)

@@ -8,6 +8,8 @@ use App\Models\Wallet;
 use App\Traits\HandlesOpenseaTransactions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -19,7 +21,7 @@ class TransactionsController extends Controller
     {
         $request->validate([
             'wallet'     => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
-            'event'      => ['string', Rule::in(config('hawk.opensea.event.types'))],
+            'event'      => ['string', Rule::in(array_merge(config('hawk.opensea.event.types'), ['all']))],
             'schema'     => ['string', Rule::in(['ERC20', 'opensea'])],
 
             // Previews records
@@ -34,6 +36,7 @@ class TransactionsController extends Controller
             'date_end'   => ['numeric', 'datetime:U'],
         ]);
 
+
         // ERC20 transactions searched
         if ($request->has('schema') && strtolower($request->query('schema')) == 'erc20') {
             return view('transactions', [
@@ -47,6 +50,10 @@ class TransactionsController extends Controller
          * OPENSEA TRANSACTIONS LOGIC
          * ===================================
          */
+        Log::debug('Showing opensea transactions', [
+            'event_type' => $request->query('event'),
+        ]);
+
         $ref_transaction = null;
 
         // ===== DATE FILTER =====
@@ -65,6 +72,14 @@ class TransactionsController extends Controller
             $start = $has_dates ? max($dates['start'], $dates['end']) : null;
             $end   = $has_dates ? min($dates['start'], $dates['end']) : null;
 
+            Log::debug('Filtering transactions by date', [
+                'start'     => (new Carbon($start))->format('d-m-y H:i:s'),
+                'end'       => (new Carbon($end))->format('d-m-y H:i:s'),
+                'paginated' => $request->has('next') || $request->has('previous'),
+                'next'      => $request->query('next'),
+                'previous'  => $request->query('previous'),
+            ]);
+
             // Opensea cursor provided (paginate through API only)
             $response = $this->fetchFromOpenseaAPI(
                 wallet_id: $request->query('wallet'),
@@ -74,7 +89,14 @@ class TransactionsController extends Controller
                 after: $end,
             );
 
+
             $records = $this->saveRawOpenseaEvents($response['asset_events']);
+
+            Log::debug('Fetched events form API and saved to database', [
+                'fetched'  => count($response['asset_events']),
+                'existing' => $records['existing'],
+                'uniques'  => $records['uniques']
+            ]);
 
             return view('transactions', [
                 'next'          => $response['next'],
@@ -90,6 +112,10 @@ class TransactionsController extends Controller
         // If reference transaction is passed (for pagination) then fetch its
         // record first
         if ($request->has('before') || $request->has('after')) {
+            Log::debug('Request has pagination details', [
+                'before' => $request->query('before'),
+                'after'  => $request->query('after'),
+            ]);
 
             // Make sure wallet record exist for the transaction we're looking
             // for, this should exist if user has navigated through pagination
@@ -136,9 +162,19 @@ class TransactionsController extends Controller
                 )
                     ->first();
 
+                // First record of specified filters query is equal to fetched
+                // list of records of specified filters
+                // Query(filters)->first  ===  Query(filters)(bulk)->first
+                $page_one = $first_one->transaction_id !== $events->first()->transaction_id;
+
+                Log::debug('Requested for newer events, served from database', [
+                    'events_count' => $events->count(),
+                    'page_one'     => $page_one,
+                ]);
+
                 return view('transactions', [
                     // Has moved to next page?
-                    'paginated'    => $first_one->transaction_id !== $events->first()->transaction_id,
+                    'paginated'    => $page_one,
                     'transactions' => $events,
                 ]);
             }
@@ -156,6 +192,14 @@ class TransactionsController extends Controller
 
                     // Save fetched transactions to database
                     $records = $this->saveRawOpenseaEvents($response['asset_events']);
+
+                    Log::debug('Requested for previous records, serving from API', [
+                        'fetched'                    => count($response['asset_events']),
+                        'existing'                   => $records['existing'],
+                        'uniques'                    => $records['uniques'],
+                        'indexed'                    => true,
+                        'pagination_timer_exhausted' => true,
+                    ]);
 
                     // User is viewing previous records and some of the records
                     // already exist in database, this means further records
@@ -178,6 +222,12 @@ class TransactionsController extends Controller
                     ->where('event_timestamp', '<', (int) $ref_transaction->event_timestamp->format('U'))
                     ->get();
 
+                Log::debug('Requested for previous records, serving from database', [
+                    'events_count'               => $events->count(),
+                    'indexed'                    => true,
+                    'pagination_timer_exhausted' => false,
+                ]);
+
                 return view('transactions', [
                     // Has moved to next page?
                     'paginated'    => true, // We must have came from first page
@@ -195,6 +245,13 @@ class TransactionsController extends Controller
 
             $records = $this->saveRawOpenseaEvents($response['asset_events']);
 
+            Log::debug('Requested for previous records, not indexed so serving through API', [
+                'fetched'                    => count($response['asset_events']),
+                'existing'                   => $records['existing'],
+                'uniques'                    => $records['uniques'],
+                'indexed'                    => false,
+            ]);
+
             // We API sent fewer records then it means we have reached till end
             // are there are no further records
             if ($records['events']->count() < config('hawk.opensea.event.per_page'))
@@ -205,6 +262,8 @@ class TransactionsController extends Controller
                 'transactions'    => $records['events']
             ]);
         }
+
+        Log::debug('Requested for simple transactions (without pagination)');
 
         // ===== SIMPLE VIEW =====
         // We have indexed all the records all ready
@@ -225,22 +284,37 @@ class TransactionsController extends Controller
                 if ($records['existing'] > 0)
                     $this->updateOpenseaPaginationTimer($request->query('wallet'));
 
+                Log::debug('Indexed and timer has exhausted so fetching events from API and saving', [
+                    'fetched'                    => count($response['asset_events']),
+                    'existing'                   => $records['existing'],
+                    'uniques'                    => $records['uniques'],
+                    'indexed'                    => true,
+                    'pagination_timer_exhausted' => true,
+                    'updated_pagination_timer'   => $records['existing'] > 0
+                ]);
+
                 return view('transactions', [
                     'transactions' => $records['events'],
                 ]);
             }
 
             // Pagination timer is not exhausted yet, fetch records from DB
-            $records = Opensea::forWallet(
+            $events = Opensea::forWallet(
                 $request->query('wallet'),
                 $request->query('event'),
                 config('hawk.opensea.event.per_page')
             )
                 ->get();
 
+            Log::debug('Indexed and timer has not exhausted, serving from database', [
+                'events_count'               => $events->count(),
+                'indexed'                    => true,
+                'pagination_timer_exhausted' => false,
+            ]);
+
             return view('transactions', [
                 'paginated'    => true, // We must have came from first page
-                'transactions' => $records,
+                'transactions' => $events,
             ]);
         }
 
@@ -257,6 +331,14 @@ class TransactionsController extends Controller
             // Update the cool down timer
             $this->updateOpenseaLockoutTimer($request->query('wallet'));
 
+            Log::debug('Not fully indexed yet but cooled down, fetching events from API and saving', [
+                'fetched'                => count($response['asset_events']),
+                'existing'               => $records['existing'],
+                'uniques'                => $records['uniques'],
+                'indexed'                => false,
+                'rate_limiter_exhausted' => true,
+            ]);
+
             return view('transactions', ['transactions' => $records['events']]);
         }
 
@@ -267,6 +349,11 @@ class TransactionsController extends Controller
             config('hawk.opensea.event.per_page')
         )
             ->get();
+
+        Log::debug('Not fully indexed yet and not cooled down, serving from database', [
+            'events_count'           => $events->count(),
+            'rate_limiter_exhausted' => false,
+        ]);
 
         return view('transactions', ['transactions' => $events]);
     }
