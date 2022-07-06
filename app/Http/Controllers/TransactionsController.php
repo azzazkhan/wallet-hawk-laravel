@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\JSON;
-use App\Models\ERC20;
 use App\Models\Opensea;
+use App\Models\Wallet;
 use App\Traits\HandlesOpenseaTransactions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -16,33 +16,6 @@ class TransactionsController extends Controller
     use HandlesOpenseaTransactions;
 
     public function index(Request $request)
-    {
-        $validated = $request->validate([
-            'wallet' => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
-            'event'  => ['string', Rule::in(config('hawk.opensea.event.types'))]
-        ]);
-
-        $schema = $request->query('schema'); // Check which token user is searching for
-
-        // Show ERC20 records if they are willing to see them
-        if (strtolower($schema) === 'erc20')
-            return view('transactions', [
-                'schema'       => 'ERC20',
-                'transactions' => JSON::parseFile('erc20.json')['transactions'],
-            ]);
-
-
-        return view('transactions', [
-            'schema'       => 'ERC721-ERC1155',
-            'transactions' => $this->fetchOpenseaEvents($validated['wallet'], $validated['event'] ?? null),
-        ]);
-    }
-
-    private function walletRules()
-    {
-    }
-
-    public function paginateOpensea(Request $request)
     {
         $request->validate([
             'wallet'     => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
@@ -62,31 +35,11 @@ class TransactionsController extends Controller
         ]);
 
         // ERC20 transactions searched
-        if ($request->has('schema') && strtoupper($request->query('schema')) == 'ERC20') {
-            $ref_transaction = null;
-
-            // If reference transaction is passed (for pagination) then fetch its
-            // record first
-            if ($request->has('before') || $request->has('after')) {
-                // Fetch record based on passed event ID
-                $ref_transaction = ERC20::query()
-                    ->when($request->has('after'), function (Builder $query) use ($request) {
-                        $query->where('block_id', $request->query('after'));
-                    })
-                    ->when($request->has('before'), function (Builder $query) use ($request) {
-                        $query->where('block_id', $request->query('before'));
-                    })
-                    ->select('block_timestamp')
-                    ->limit(config('hawk.opensea.event.per_page'))
-                    ->first();
-
-                // Reference transaction does not exists or has invalid timestamp
-                // and we cannot use its event timestamp :(
-                if (!$ref_transaction || !$ref_transaction->block_timestamp)
-                    throw new NotFoundHttpException(
-                        'The reference transaction does not exist or is invalid, please navigate to first page.'
-                    );
-            }
+        if ($request->has('schema') && strtolower($request->query('schema')) == 'erc20') {
+            return view('transactions', [
+                'schema'       => 'ERC20',
+                'transactions' => JSON::parseFile('erc20.json')['transactions'],
+            ]);
         }
 
         /**
@@ -137,6 +90,13 @@ class TransactionsController extends Controller
         // If reference transaction is passed (for pagination) then fetch its
         // record first
         if ($request->has('before') || $request->has('after')) {
+
+            // Make sure wallet record exist for the transaction we're looking
+            // for, this should exist if user has navigated through pagination
+            if (!Wallet::where('wallet_id', $request->query('wallet'))->first())
+                return abort(401, 'Wallet record does not exist, please go to first page.');
+
+
             // Fetch record based on passed event ID
             $ref_transaction = Opensea::query()
                 ->when($request->has('after'), function (Builder $query) use ($request) {
@@ -165,7 +125,7 @@ class TransactionsController extends Controller
                     $request->query('event'),
                     config('hawk.opensea.event.per_page')
                 )
-                    ->where('event_timestamp', '>', $ref_transaction->event_timestamp)
+                    ->where('event_timestamp', '>', (int) $ref_transaction->event_timestamp->format('U'))
                     ->get();
 
                 // Grab the first record for wallet for comparing if we have
@@ -183,7 +143,6 @@ class TransactionsController extends Controller
                 ]);
             }
 
-
             // We have already indexed all the records
             if ($this->hasOpenseaIndexed($request->query('wallet'))) {
 
@@ -192,7 +151,7 @@ class TransactionsController extends Controller
                     $response = $this->fetchFromOpenseaAPI(
                         wallet_id: $request->query('wallet'),
                         type: $request->query('event'),
-                        before: $ref_transaction->event_timestamp,
+                        before: (int) $ref_transaction->event_timestamp->format('U'),
                     );
 
                     // Save fetched transactions to database
@@ -216,7 +175,7 @@ class TransactionsController extends Controller
                     $request->query('event'),
                     config('hawk.opensea.event.per_page')
                 )
-                    ->where('event_timestamp', '<', $ref_transaction->event_timestamp)
+                    ->where('event_timestamp', '<', (int) $ref_transaction->event_timestamp->format('U'))
                     ->get();
 
                 return view('transactions', [
@@ -231,7 +190,7 @@ class TransactionsController extends Controller
             $response = $this->fetchFromOpenseaAPI(
                 wallet_id: $request->query('wallet'),
                 type: $request->query('event'),
-                before: $ref_transaction->event_timestamp,
+                before: (int) $ref_transaction->event_timestamp->format('U'),
             );
 
             $records = $this->saveRawOpenseaEvents($response['asset_events']);
@@ -243,7 +202,7 @@ class TransactionsController extends Controller
 
             return view('transactions', [
                 'paginated' => true,
-                'events'    => $records['events']
+                'transactions'    => $records['events']
             ]);
         }
 
@@ -280,19 +239,17 @@ class TransactionsController extends Controller
                 ->get();
 
             return view('transactions', [
-                // Has moved to next page?
+                'paginated'    => true, // We must have came from first page
                 'transactions' => $records,
-                'paginated'    => true // We must have came from first page
             ]);
         }
 
         // Records are not indexed yet, if cool down timer has exhausted then
         // then fetch records from API and increment the timer
         if ($this->hasOpenseaCooledDown($request->query('wallet'))) {
-            $response = Opensea::forWallet(
+            $response = $this->fetchFromOpenseaAPI(
                 wallet_id: $request->query('wallet'),
-                type: $request->query('event'),
-                limit: config('hawk.opensea.event.per_page')
+                type: $request->query('event')
             );
 
             $records = $this->saveRawOpenseaEvents($response['asset_events']);
@@ -308,7 +265,8 @@ class TransactionsController extends Controller
             $request->query('wallet'),
             $request->query('event'),
             config('hawk.opensea.event.per_page')
-        );
+        )
+            ->get();
 
         return view('transactions', ['transactions' => $events]);
     }

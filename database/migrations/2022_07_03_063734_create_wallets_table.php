@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('wallet_id')->unique();
 
             // Have we indexed all the data?
-            $table->boolean('opensea_index')->default(false);
-            $table->boolean('erc20_index')->default(false);
+            $table->boolean('opensea_indexed')->default(false);
+            $table->boolean('erc20_indexed')->default(false);
 
             // Last requested
             $table->timestamp('last_opensea_request')->nullable();

@@ -8,41 +8,43 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\CssSelector\Exception\InternalErrorException;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
+use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 trait HandlesOpenseaTransactions
 {
-    private function fetchOpenseaEvents(string $wallet_id, string $event_type = null): Collection|null
-    {
-        if ($this->hasOpenseaCooledDown($wallet_id)) {
-            // Fetch transactions for requested wallet address
-            $response = $this->fetchFromOpenseaAPI($wallet_id, $event_type);
-
-            // Invalid data or API calls limit reached
-            if (is_null($response) || !array_key_exists('asset_events', $response))
-                throw new TooManyRequestsHttpException(1, 'Please try again in a few moments');
-
-            $result = $this->saveRawOpenseaEvents($response['asset_events']);
-
-            $this->updateOpenseaLockoutTimer($wallet_id);
-
-            return $result['events'];
-        }
-
-        // Fetch events from database
-        return Opensea::forWallet($wallet_id, $event_type, config('hawk.opensea.event.per_page'))
-            ->get();
-    }
-
+    /**
+     * Fetches ERC721 and ERC1155 transactions for specified wallet address
+     * from Opensea API and also applies specified filers.
+     *
+     * @param string $wallet_id Wallet address for which transactions need to
+     *                          be fetched
+     * @param ?string $type (Optional) Opensea event type
+     * @param ?string $cursor (Optional) Opensea pagination cursor
+     * @param ?int $before (Option) Event ID (for custom pagination)
+     * @param ?int $after (Option) Event ID (for custom pagination)
+     *
+     * @return array
+     */
     private function fetchFromOpenseaAPI(
         string $wallet_id,
-        string $type = null,
-        string $cursor = null,
-        int $before = null,
-        int $after = null,
-    ): array|null {
+        ?string $type = null,
+        ?string $cursor = null,
+        ?int $before = null,
+        ?int $after = null,
+    ): array {
+        // Make sure we have not reach API calls limit before trying to
+        // initiate new API request
         if (!$this->incrementOpenseaCounter())
-            return null;
+            throw new TooManyRequestsHttpException(
+                2, // Retry after (seconds)
+                'Server overloaded, please try again in few moments',
+            );
+
+        // Keep track of how many calls we have consumed so far
+        $this->incrementOpenseaAPICallCounter();
 
         $response = Http::retry(3, 300)
             ->acceptJson()
@@ -60,7 +62,7 @@ trait HandlesOpenseaTransactions
         $this->decrementOpenseaCounter();
 
         if ($response->serverError())
-            return null;
+            throw new InternalErrorException('The records service is having issues!');
 
         return $response->json();
     }
@@ -69,6 +71,13 @@ trait HandlesOpenseaTransactions
      * ========================================
      * UTILITY FUNCTIONS (PARSING, SAVING...)
      * ========================================
+     */
+    /**
+     * Saves passed parsed Opensea events and ignores existing events.
+     *
+     * @param Collection<array> $events Parsed Opensea events.
+     *
+     * @return array
      */
     private function saveOpenseaEvents(Collection $events): array
     {
@@ -110,6 +119,14 @@ trait HandlesOpenseaTransactions
         ];
     }
 
+    /**
+     * Parses raw Opensea events data using `parseOpenseaEvent` and saves them
+     * in database using `saveOpenseaEvents` method.
+     *
+     * @param $events Array of Opensea events (fetched from `asset_events`)
+     *
+     * @return array
+     */
     private function saveRawOpenseaEvents(array $events): array
     {
         // Parsed events into indexable form
@@ -119,6 +136,14 @@ trait HandlesOpenseaTransactions
         return $this->saveOpenseaEvents($events);
     }
 
+    /**
+     * Parses passed raw Opensea event data (fetched form API) and converts it
+     * into `\App\Models\Opensea` compatible schema.
+     *
+     * @param array $event Raw Opensea event data (element of `asset_events`)
+     *
+     * @return array
+     */
     private function parseOpenseaEvent(array $event): array
     {
         $asset = $event['asset'];
@@ -174,6 +199,14 @@ trait HandlesOpenseaTransactions
      * WALLET LOCKOUT TIMER MANAGEMENT
      * ===================================
      */
+    /**
+     * Checks if Opensea rate limiter timer has expired for specified wallet
+     * address or not.
+     *
+     * @param string $wallet_id The wallet address
+     *
+     * @return bool
+     */
     private function hasOpenseaCooledDown(string $wallet_id): bool
     {
         $wallet = Wallet::where('wallet_id', $wallet_id)->first();
@@ -185,30 +218,130 @@ trait HandlesOpenseaTransactions
             (int) now()->format('U');
     }
 
-    private function updateOpenseaLockoutTimer(string $wallet_id)
+    /**
+     * Updates Opensea rate limiter timer for specified wallet address.
+     *
+     * @param string $wallet_id The wallet address
+     *
+     * @return bool
+     */
+    private function updateOpenseaLockoutTimer(string $wallet_id): void
+    {
+        $wallet = Wallet::where('wallet_id', $wallet_id)->first();
+
+        if (!$wallet) // If walled records does not exists then create one
+            Wallet::create([
+                'wallet_id' => $wallet_id,
+                'last_opensea_request' => now()->format('Y-m-d H:i:s')
+            ]);
+        else // Update the timer on existing record
+            $wallet->update([
+                'last_opensea_request' => now()->format('Y-m-d H:i:s')
+            ]);
+    }
+
+    /**
+     * Checks if Opensea pagination rate limiter timer has expired for
+     * specified wallet address or not.
+     *
+     * @param string $wallet_id The wallet address
+     *
+     * @return bool
+     */
+    private function hasOpenseaPaginationTimerExhausted(string $wallet_id): bool
     {
         $wallet = Wallet::where('wallet_id', $wallet_id)->first();
 
         if (!$wallet)
-            return Wallet::create([
-                'wallet_id' => $wallet_id,
-                'last_opensea_request' => now()->format('Y-m-d H:i:s')
-            ]);
+            throw new BadRequestException(
+                'Requested wallet\'s record does not exist! Please go to first page.'
+            );
 
-        return $wallet->update([
-            'last_opensea_request' => now()->format('Y-m-d H:i:s')
+        // Pagination timer value does not exist that means it's never
+        // wallet transactions has naver been paginated
+        if (!$wallet->last_opensea_pagination)
+            return true;
+
+        // Compare pagination time with current time
+        return (int) $wallet->last_opensea_pagination->format('U') + config('hawk.opensea.limits.pagination') <=
+            (int) now()->format('U');
+    }
+
+
+    /**
+     * Updates rate Opensea pagination limiter timer for specified wallet
+     * address.
+     *
+     * @param string $wallet_id The wallet address
+     *
+     * @return void
+     */
+    private function updateOpenseaPaginationTimer(string $wallet_id): void
+    {
+        $wallet = Wallet::where('wallet_id', $wallet_id)->first();
+
+        if (!$wallet)
+            throw new BadRequestException(
+                'Requested wallet\'s record does not exist! Please go to first page.'
+            );
+
+
+        $wallet->update([
+            'last_opensea_pagination' => now()->format('Y-m-d H:i:s')
         ]);
     }
 
-    private function updateOpenseaPaginationTimer(string $wallet_id)
+    /**
+     * Checks if all Opensea transactions are fetched (indexed) from the
+     * beginning for the specified wallet address or not.
+     *
+     * @param string $wallet_id Wallet address to be checked for
+     *
+     * @return bool
+     */
+    private function hasOpenseaIndexed(string $wallet_id): bool
     {
+        $wallet = Wallet::where('wallet_id', $wallet_id)->first();
+
+        if (!$wallet) // Wallet does not exists!
+            return false;
+
+        return (bool) $wallet->opensea_indexed;
     }
 
+    /**
+     * Marks the specified wallet as Opensea indexed meaning all of
+     * transactions for this wallet (from beginning) have been saved by us.
+     *
+     * @param string $wallet_id The wallet address
+     *
+     * @return void
+     */
+    private function setOpenseaIndexed(string $wallet_id): void
+    {
+        $wallet = Wallet::where('wallet_id', $wallet_id)->first();
+
+        // If the wallet record does not exists then create a new one
+        if (!$wallet)
+            Wallet::create([
+                'wallet_id'     => $wallet_id,
+                'opensea_index' => true,
+            ]);
+
+        else
+            $wallet->update(['opensea_index' => true]);
+    }
 
     /**
      * ==============================
      * API CALLS COUNTER MANAGEMENT
      * ==============================
+     */
+    /**
+     * Makes sure we can increment the Opensea API calls counter then increments
+     * the counter.
+     *
+     * @return bool
      */
     private function incrementOpenseaCounter(): bool
     {
@@ -218,6 +351,11 @@ trait HandlesOpenseaTransactions
         return true;
     }
 
+    /**
+     * Decrements the opensea API calls counter.
+     *
+     * @return void
+     */
     private function decrementOpenseaCounter(): void
     {
         $counter = Cache::get('opensea_counter', function () {
@@ -235,6 +373,13 @@ trait HandlesOpenseaTransactions
             Cache::decrement('opensea_counter');
     }
 
+    /**
+     * Checks if we can increment the opensea calls counter or not. This
+     * counter's intended purpose is that we cannot exceed our specified max
+     * calls/sec and violate Opensea API TOS.
+     *
+     * @return bool
+     */
     private function canIncrementOpensea(): bool
     {
         $counter = Cache::get('opensea_counter', function () {
@@ -244,5 +389,19 @@ trait HandlesOpenseaTransactions
         });
 
         return $counter < config('hawk.opensea.network.max_calls');
+    }
+
+    /**
+     * Increments the total Opensea API call counter used to cap daily number
+     * of API calls sent.
+     *
+     * @return void
+     */
+    private function incrementOpenseaAPICallCounter(): void
+    {
+        if (Cache::has('opensea_calls_count'))
+            Cache::increment('opensea_calls_count');
+        else
+            Cache::put('opensea_calls_count', 1);
     }
 }

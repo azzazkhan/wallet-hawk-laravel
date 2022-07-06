@@ -16,8 +16,8 @@ class Wallet extends Model
      */
     protected $fillable = [
         'wallet_id',
-        'opensea_index',
-        'erc20_index',
+        'opensea_indexed',
+        'erc20_indexed',
         'last_opensea_request',
         'last_etherscan_request',
         'last_opensea_pagination',
@@ -30,8 +30,8 @@ class Wallet extends Model
      * @var array
      */
     protected $attributes = [
-        'opensea_index' => false,
-        'erc20_index'   => false,
+        'opensea_indexed' => false,
+        'erc20_indexed'   => false,
     ];
 
     /**
@@ -40,8 +40,8 @@ class Wallet extends Model
      * @var array
      */
     protected $casts = [
-        'opensea_index'             => 'boolean',
-        'erc20_index'               => 'boolean',
+        'opensea_indexed'           => 'boolean',
+        'erc20_indexed'             => 'boolean',
         'last_opensea_request'      => 'datetime:U',
         'last_etherscan_request'    => 'datetime:U',
         'last_opensea_pagination'   => 'datetime:U',

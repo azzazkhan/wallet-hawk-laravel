@@ -1,3 +1,4 @@
+<!-- next, previous, paginated, transactions, date_filtered -->
 <x-app>
     <x-layout.page>
         <x-forms.search class="md:w-[400px] mr-auto flex-start" small />
@@ -5,7 +6,7 @@
             <x-forms.filters.desktop.form action="{{ route('transactions') }}" />
             <x-forms.filters.mobile.form action="{{ route('transactions') }}" />
 
-            @if ($schema === 'ERC20')
+            @if (request()->has('scchema') && request()->query('schema') == 'erc20')
                 <x-transactions.erc20.table :transactions="$transactions" />
             @else
                 <x-transactions.opensea.table :transactions="$transactions" />
