@@ -89,8 +89,14 @@ class TransactionsController extends Controller
             }
         }
 
+        /**
+         * ===================================
+         * OPENSEA TRANSACTIONS LOGIC
+         * ===================================
+         */
         $ref_transaction = null;
 
+        // ===== DATE FILTER =====
         // User is filtering by date, filtering by date will be performed only
         // through API calls
         // Pagination will only be performed using cursors
@@ -115,17 +121,19 @@ class TransactionsController extends Controller
                 after: $end,
             );
 
+            $records = $this->saveRawOpenseaEvents($response['asset_events']);
+
             return view('transactions', [
-                'next'         => $response['next'],
-                'previous'     => $response['previous'],
+                'next'          => $response['next'],
+                'previous'      => $response['previous'],
                 // Has moved to next page?
-                'paginated'    => $response['previous'] ? true : false,
-                'transactions' => $response['asset_events'],
+                'paginated'     => $response['previous'] ? true : false,
+                'transactions'  => $records['events'],
+                'date_filtered' => true
             ]);
         }
 
-
-
+        // ===== PAGINATION LOGIC =====
         // If reference transaction is passed (for pagination) then fetch its
         // record first
         if ($request->has('before') || $request->has('after')) {
@@ -148,6 +156,33 @@ class TransactionsController extends Controller
                     'The reference transaction does not exist or is invalid, please navigate to first page.'
                 );
 
+            // User is trying to view newer records and we'll surely have them
+            // because user can only come to this page through pagination and
+            // we've already saved all previous records locally
+            if ($request->has('after')) {
+                $events = Opensea::forWallet(
+                    $request->query('wallet'),
+                    $request->query('event'),
+                    config('hawk.opensea.event.per_page')
+                )
+                    ->where('event_timestamp', '>', $ref_transaction->event_timestamp)
+                    ->get();
+
+                // Grab the first record for wallet for comparing if we have
+                // further new records or not
+                $first_one = Opensea::forWallet(
+                    $request->query('wallet'),
+                    $request->query('event')
+                )
+                    ->first();
+
+                return view('transactions', [
+                    // Has moved to next page?
+                    'paginated'    => $first_one->transaction_id !== $events->first()->transaction_id,
+                    'transactions' => $events,
+                ]);
+            }
+
 
             // We have already indexed all the records
             if ($this->hasOpenseaIndexed($request->query('wallet'))) {
@@ -157,42 +192,124 @@ class TransactionsController extends Controller
                     $response = $this->fetchFromOpenseaAPI(
                         wallet_id: $request->query('wallet'),
                         type: $request->query('event'),
-                        cursor: $request->query('next') ?: $request->query('previous'),
-                        before: $request->has('before') ? $ref_transaction?->event_id : null,
-                        after: $request->has('after') ? $ref_transaction?->event_id : null,
+                        before: $ref_transaction->event_timestamp,
                     );
 
                     // Save fetched transactions to database
                     $records = $this->saveRawOpenseaEvents($response['asset_events']);
 
-                    // API sent some records that already exist locally, this
-                    // means we have further data
+                    // User is viewing previous records and some of the records
+                    // already exist in database, this means further records
+                    // will surely exist
                     if ($records['existing'] > 0)
                         $this->updateOpenseaPaginationTimer($request->query('wallet'));
 
                     return view('transactions', [
-                        'next'         => $response['next'],
-                        'previous'     => $response['previous'],
-                        // Has moved to next page?
-                        'paginated'    => $response['previous'] ? true : false,
-                        'transactions' => $response['asset_events'],
+                        'paginated'    => true, // We must have came from first page
+                        'transactions' => $records['events'],
                     ]);
                 }
 
                 // Pagination timer is not exhausted yet, fetch records from DB
-                $transactions = Opensea::forWallet(
+                $events = Opensea::forWallet(
                     $request->query('wallet'),
                     $request->query('event'),
                     config('hawk.opensea.event.per_page')
-                )->where(function (Builder $query) use ($request, $ref_transaction) {
-                    if ($request->has('before'))
-                        $query->where('event_timestamp', '<', $ref_transaction->event_timestamp);
-                    if ($request->has('after'))
-                        $query->where('event_timestamp', '>', $ref_transaction->event_timestamp);
+                )
+                    ->where('event_timestamp', '<', $ref_transaction->event_timestamp)
+                    ->get();
 
-                    return $query;
-                });
+                return view('transactions', [
+                    // Has moved to next page?
+                    'paginated'    => true, // We must have came from first page
+                    'transactions' => $events,
+                ]);
             }
+
+            // We have not indexed all transactions for this wallet, data for
+            // all requests will be consumed from API
+            $response = $this->fetchFromOpenseaAPI(
+                wallet_id: $request->query('wallet'),
+                type: $request->query('event'),
+                before: $ref_transaction->event_timestamp,
+            );
+
+            $records = $this->saveRawOpenseaEvents($response['asset_events']);
+
+            // We API sent fewer records then it means we have reached till end
+            // are there are no further records
+            if ($records['events']->count() < config('hawk.opensea.event.per_page'))
+                $this->setOpenseaIndexed($request->query('wallet'));
+
+            return view('transactions', [
+                'paginated' => true,
+                'events'    => $records['events']
+            ]);
         }
+
+        // ===== SIMPLE VIEW =====
+        // We have indexed all the records all ready
+        if ($this->hasOpenseaIndexed($request->query('wallet'))) {
+
+            // Index timer has expired fetch new records
+            if ($this->hasOpenseaPaginationTimerExhausted($request->query('wallet'))) {
+                $response = $this->fetchFromOpenseaAPI(
+                    wallet_id: $request->query('wallet'),
+                    type: $request->query('event'),
+                );
+
+                // Save fetched transactions to database
+                $records = $this->saveRawOpenseaEvents($response['asset_events']);
+
+                // Some of the records already exist locally so further records
+                // will exist definitely because we have indexed till end
+                if ($records['existing'] > 0)
+                    $this->updateOpenseaPaginationTimer($request->query('wallet'));
+
+                return view('transactions', [
+                    'transactions' => $records['events'],
+                ]);
+            }
+
+            // Pagination timer is not exhausted yet, fetch records from DB
+            $records = Opensea::forWallet(
+                $request->query('wallet'),
+                $request->query('event'),
+                config('hawk.opensea.event.per_page')
+            )
+                ->get();
+
+            return view('transactions', [
+                // Has moved to next page?
+                'transactions' => $records,
+                'paginated'    => true // We must have came from first page
+            ]);
+        }
+
+        // Records are not indexed yet, if cool down timer has exhausted then
+        // then fetch records from API and increment the timer
+        if ($this->hasOpenseaCooledDown($request->query('wallet'))) {
+            $response = Opensea::forWallet(
+                wallet_id: $request->query('wallet'),
+                type: $request->query('event'),
+                limit: config('hawk.opensea.event.per_page')
+            );
+
+            $records = $this->saveRawOpenseaEvents($response['asset_events']);
+
+            // Update the cool down timer
+            $this->updateOpenseaLockoutTimer($request->query('wallet'));
+
+            return view('transactions', ['transactions' => $records['events']]);
+        }
+
+        // Timer has not cooled down yet, fetch records from database
+        $events = Opensea::forWallet(
+            $request->query('wallet'),
+            $request->query('event'),
+            config('hawk.opensea.event.per_page')
+        );
+
+        return view('transactions', ['transactions' => $events]);
     }
 }
