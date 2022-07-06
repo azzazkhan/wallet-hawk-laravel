@@ -3,6 +3,13 @@
     :columns="['Item', 'In/Out', 'Quantity', 'From', 'To', 'Txn Fee', 'Time']"
     editable
 >
+    @if (empty($transactions) || count($transactions) == 0)
+        <tr>
+            <th colspan="7" class="font-semibold text-center text-gray-500">
+                No transaction records available :(
+            </th>
+        </tr>
+    @endif
     @foreach ($transactions as $transaction)
         <x-flowbite.table.row
             action="{{ sprintf('/transactions/0x%s/details', hash('sha1', microtime() . random_int(100, 10000))) }}"

@@ -1,5 +1,11 @@
 @props(['action' => null, 'label' => 'Details'])
-<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+<tr
+    {{
+        $attributes->merge([
+            'class' => 'bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
+        ])
+    }}
+>
     {{ $slot }}
     @if (CStr::isValidString($action))
         <td class="px-6 py-4 text-right">
