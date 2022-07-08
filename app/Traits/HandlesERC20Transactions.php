@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\Wallet;
 use CStr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,7 @@ trait HandlesERC20Transactions
 
     private function fetchFromEtherscanAPI(
         string $wallet_id,
-        string $limit,
+        ?int $limit = 20,
         ?int $page = 1,
     ): array {
         if (!$this->incrementEtherscanCounter())
@@ -48,12 +49,41 @@ trait HandlesERC20Transactions
         return is_array($data['result']) ? $data['result'] : [];
     }
 
-    private function saveEtherscanEvents(): void {}
-    private function saveRawEtherscanEvents(): void {}
-
-    private function parseEtherscanEvent(): array
+    private function saveEtherscanTransaction(): void
     {
-        return [];
+    }
+    private function saveRawEtherscanTransaction(): void
+    {
+    }
+
+    private function parseEtherscanTransaction(array $block): array
+    {
+        return [
+            'accounts' => [
+                'from' => $block['from'],
+                'to'   => $block['from'],
+            ],
+            'block_timestamp' => (int) (new Carbon($block['timeStamp']))->format('U'),
+            'block_number'    => (int) $block['blockNumber'],
+            'block_hash'      => $block['hash'],
+
+            'gas' => [
+                'cumulativeUsage' => $block['cumulativeGasUsed'],
+                'gas'             => $block['gas'],
+                'price'           => $block['gasPrice'],
+                'usd'             => $block['gasUsed'],
+            ],
+            'hash'  => $block['hash'],
+            'confirmations' => (int) $block['confirmations'],
+            'input' => $block['input'],
+            'nonce' => (int) $block['nonce'],
+            'token' => [
+                'name'     => $block['tokenName'],
+                'decimals' => $block['tokenDecimal'],
+                'symbol'   => $block['tokenSymbol'],
+            ],
+            'value' => (int) $block['value'],
+        ];
     }
 
     /**

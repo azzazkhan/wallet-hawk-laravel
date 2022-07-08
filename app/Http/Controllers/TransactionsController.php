@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\JSON;
+use App\Models\ERC20;
 use App\Models\Opensea;
 use App\Models\Wallet;
+use App\Traits\HandlesERC20Transactions;
 use App\Traits\HandlesOpenseaTransactions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -15,7 +17,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class TransactionsController extends Controller
 {
-    use HandlesOpenseaTransactions;
+    use HandlesOpenseaTransactions, HandlesERC20Transactions;
 
     public function index(Request $request)
     {
@@ -356,5 +358,26 @@ class TransactionsController extends Controller
         ]);
 
         return view('transactions', ['transactions' => $events]);
+    }
+
+    public function etherscan(Request $request)
+    {
+        if ($this->hasEtherscanIndexed($request->query('wallet'))) {
+            if ($this->hasEtherscanCooledDown($request->query('wallet'))) {
+            }
+        }
+
+        $transactions = $this->fetchFromEtherscanAPI($request->query('wallet'));
+
+        return view('transactions', compact('transactions'));
+
+        // ERC20::query()
+        //     ->where(function (Builder $query) use ($request) {
+        //         $query
+        //             ->where('accounts->from', $request->query('wallet'))
+        //             ->orWhere('accounts->to', $request->query('wallet'));
+        //     })
+        //     ->limit(20)
+        //     ->get();
     }
 }

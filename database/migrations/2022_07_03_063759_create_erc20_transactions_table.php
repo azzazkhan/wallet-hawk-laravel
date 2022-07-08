@@ -16,12 +16,20 @@ return new class extends Migration
         Schema::create('erc20_transactions', function (Blueprint $table) {
             $table->id();
 
-            $table->json('accounts');
-            $table->json('block');
+            $table->json('accounts'); // Sender and receiver
+
+            // Block information
+            $table->timestamp('block_timestamp');
+            $table->unsignedInteger('block_number')->unique();
+            $table->string('block_hash')->unique();
+
+            $table->string('hash')->unique(); // Transaction hash
+
+            // Pricing details
             $table->json('gas');
+
             $table->json('token');
 
-            $table->string('hash');
             $table->string('input');
 
             $table->unsignedInteger('nonce');
