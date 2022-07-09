@@ -1,5 +1,5 @@
 <x-app>
     <x-layout.page>
-        <livewire:tranasctions.tables.etherscan />
+        <livewire:etherscan-table />
     </x-layout.page>
 </x-app>

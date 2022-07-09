@@ -1,32 +1,34 @@
 <?php
 
-namespace App\Http\Livewire\Transactions\Tables;
+namespace App\Http\Livewire;
 
-use App\Models\ERC20;
 use App\Models\Wallet;
-use GuzzleHttp\Exception\ServerException;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Livewire\Component;
-use Illuminate\Support\Carbon;
+use App\Models\Etherscan;
+use InvalidArgumentException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use InvalidArgumentException;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Symfony\Component\CssSelector\Exception\InternalErrorException;
 
-class Etherscan extends Component
+class EtherscanTable extends Component
 {
     private const PER_PAGE = 20; // Records per page
 
-    public string $wallet; // Wallet address
-    public EloquentCollection $transactions; // Fetched transactions
+    public $wallet; // Wallet address
+    public Collection $transactions; // Fetched transactions
 
     // Query string synchronized with internal component state
-    protected array $queryString = ['wallet'];
+    protected $queryString = ['wallet'];
 
     public function render()
     {
-        return view('livewire.transactions.tables.etherscan');
+        return view('livewire.etherscan-table');
+    }
+
+    public function mount(): void
+    {
+        $this->loadTransactions();
     }
 
     public function loadTransactions(): void
@@ -91,7 +93,7 @@ class Etherscan extends Component
      */
     private function getTransactionsQuery(?int $limit = self::PER_PAGE): EloquentBuilder
     {
-        return ERC20::query()
+        return Etherscan::query()
             ->where(function (EloquentBuilder $query) {
                 return $query
                     ->where('accounts->from', $this->wallet)
@@ -119,6 +121,8 @@ class Etherscan extends Component
         $response = Http::retry(3, 300)
             ->acceptJson()
             ->get('https://api.etherscan.io/api', [
+                'module'     => 'account',
+                'action'     => 'tokentx',
                 'address'    => $this->wallet,
                 'offset'     => 10000,
                 'startblock' => $start,
@@ -135,8 +139,8 @@ class Etherscan extends Component
 
     /**
      * Parses and formats raw ERC20 transactions (fetched from Etherscan API)
-     * and converts them into formatted `\App\Models\ERC20` model compatible
-     * schema array.
+     * and converts them into formatted `\App\Models\Etherscan` model
+     * compatible schema array.
      *
      * @param array<mixed> $transaction
      *
@@ -150,10 +154,11 @@ class Etherscan extends Component
                 'from' => $transaction['from'],
                 'to'   => $transaction['from'],
             ],
+
             // Block details
-            'block_timestamp' => (int) (new Carbon($transaction['timeStamp']))->format('U'),
+            'block_timestamp' => (int) $transaction['timeStamp'],
             'block_number'    => (int) $transaction['blockNumber'],
-            'block_hash'      => $transaction['hash'],
+
             // Pricing (GAS)
             'gas' => [
                 'cumulativeUsage' => $transaction['cumulativeGasUsed'],
@@ -161,17 +166,20 @@ class Etherscan extends Component
                 'price'           => $transaction['gasPrice'],
                 'usd'             => $transaction['gasUsed'],
             ],
+
             // Additional details
             'hash'  => $transaction['hash'],
             'confirmations' => (int) $transaction['confirmations'],
             'input' => $transaction['input'],
             'nonce' => (int) $transaction['nonce'],
+            'value' => (int) $transaction['value'],
+
+            // Asset token
             'token' => [
                 'name'     => $transaction['tokenName'],
                 'decimals' => $transaction['tokenDecimal'],
                 'symbol'   => $transaction['tokenSymbol'],
             ],
-            'value' => (int) $transaction['value'],
         ];
     }
 
@@ -188,8 +196,8 @@ class Etherscan extends Component
     private function saveTransactions(Collection $transactions): Collection
     {
         // Check if any of passed transactions already exist in database or not
-        $existing_transactions = ERC20::whereIn(
-            'block_hash',
+        $existing_transactions = Etherscan::whereIn(
+            'hash',
             $transactions
                 ->map(fn ($transaction) => $transaction['hash'])
                 ->toArray()
@@ -201,7 +209,9 @@ class Etherscan extends Component
             return new Collection([
                 'uniques'      => count($transactions),
                 'existing'     => 0,
-                'transactions' => $transactions->map(fn ($transaction) => ERC20::create($transaction)),
+                'transactions' => $transactions->unique('hash')->map(function (array $transaction) {
+                    return Etherscan::create($transaction);
+                }),
             ]);
 
         // Grab transaction hash from existing records (for filtering)
@@ -213,16 +223,16 @@ class Etherscan extends Component
 
         // All records already exist in database, return those
         if (!$uniques || $uniques->empty()) return new Collection([
-            'events'   => $existing_transactions,
-            'existing' => $existing_transactions->count(),
-            'uniques'  => 0,
+            'transactions' => $existing_transactions,
+            'existing'     => $existing_transactions->count(),
+            'uniques'      => 0,
         ]);
 
         // No record exists locally and all passed records are unique
         return new Collection([
-            'events'   => array_merge($existing_transactions, ERC20::create($uniques)),
-            'existing' => 0,
-            'uniques'  => $existing_transactions->count(),
+            'transactions' => array_merge($existing_transactions, Etherscan::create($uniques->unique('hash')->toArray())),
+            'existing'     => 0,
+            'uniques'      => $existing_transactions->count(),
         ]);
     }
 }

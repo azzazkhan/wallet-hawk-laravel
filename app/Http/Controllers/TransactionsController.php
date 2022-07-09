@@ -22,6 +22,15 @@ class TransactionsController extends Controller
     public function index(Request $request)
     {
         $request->validate([
+            'wallet' => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
+        ]);
+
+        return view('transactions');
+    }
+
+    public function opensea(Request $request)
+    {
+        $request->validate([
             'wallet'     => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
             'event'      => ['string', Rule::in(array_merge(config('hawk.opensea.event.types'), ['all']))],
             'schema'     => ['string', Rule::in(['ERC20', 'opensea'])],

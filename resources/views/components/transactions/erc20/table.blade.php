@@ -4,11 +4,11 @@
     editable
 >
     @if (empty($transactions) || count($transactions) == 0)
-        <tr>
+        <x-flowbite.table.row class="py-5 bg-red-500">
             <th colspan="7" class="font-semibold text-center text-gray-500">
                 No transaction records available :(
             </th>
-        </tr>
+        </x-flowbite.table.row>
     @endif
     @foreach ($transactions as $transaction)
         <x-flowbite.table.row

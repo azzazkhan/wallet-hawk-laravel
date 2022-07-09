@@ -5,9 +5,9 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ERC20>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Etherscan>
  */
-class ERC20Factory extends Factory
+class EtherscanFactory extends Factory
 {
     /**
      * Define the model's default state.
