@@ -31,5 +31,8 @@ return [
             'default' => (int) env('OPENSEA_LOCK_DURATION', 0),
             'pagination' => (int) env('OPENSEA_PAGINATION_LOCK_DURATION', 0)
         ],
+        'blocks' => [
+            'per_page' => (int) env('ETHERSCAN_RECORDS_PER_PAGE', 20)
+        ]
     ]
 ];

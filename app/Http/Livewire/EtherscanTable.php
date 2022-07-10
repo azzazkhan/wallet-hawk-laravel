@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Wallet;
 use Livewire\Component;
 use App\Models\Etherscan;
+use Illuminate\View\View;
 use InvalidArgumentException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -13,45 +14,198 @@ use Symfony\Component\CssSelector\Exception\InternalErrorException;
 
 class EtherscanTable extends Component
 {
-    private const PER_PAGE = 20; // Records per page
+    /**
+     * Wallet address being searched
+     *
+     * @var string
+     */
+    public $wallet;
 
-    public $wallet; // Wallet address
-    public Collection $transactions; // Fetched transactions
+    /**
+     * Fetched and processed transactions
+     *
+     * @var \Illuminate\Support\Collection<\App\Models\Etherscan>
+     */
+    public Collection $transactions;
 
-    // Query string synchronized with internal component state
+    /**
+     * Query string synchronized with internal component state
+     *
+     * @var array<string>
+     */
     protected $queryString = ['wallet'];
 
-    public function render()
+    /**
+     * Returns view for component UI content.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function render(): View
     {
         return view('livewire.etherscan-table');
     }
 
+    /**
+     * Livewire's provided function used instead of constructor.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         $this->loadTransactions();
     }
 
-    public function loadTransactions(): void
+    /**
+     * Loads transactions in for initial render.
+     *
+     * @return void
+     */
+    private function loadTransactions(): void
     {
         // First load transactions from database
-        $records = $this->getTransactionsQuery()->get();
+        $this->transactions = $this
+            ->getTransactionsQuery()
+            ->get()
+            ->map(function (Etherscan $transaction) {
+                return $this->convertTokenForView($transaction);
+            })
+            ->sortBy('block_number')
+            ->unique('hash');
 
-        // If no transactions exists against this wallet then load from API and
-        // cache them locally
-        if ($records->empty() || $records->count() == 0) {
-            $records = $this->processTransactions(
-                $this->getTransactionsFromAPI()
-            );
+        // We have transaction records
+        if ($this->transactions->isNotEmpty()) return;
 
-            $this->transactions = $records->get('transactions');
-            return;
-        }
+        // We do not have transaction records so fetch from API and store them
+        // in database
+        $this->processTransactions(
+            $this->getTransactionsFromAPI()
+        );
 
-        $this->transactions = $records;
+        // We have fetched records stored in database now, we can now query
+        // them
+        $this->transactions = $this
+            ->getTransactionsQuery()
+            ->get()
+            ->map(function (Etherscan $transaction) {
+                return $this->convertTokenForView($transaction);
+            })
+            ->sortBy('block_number')
+            ->unique('hash');
     }
 
-    public function loadMoreTransactions()
+    /**
+     * Called through frontend action, loads next set of transactions.
+     *
+     * @return void
+     */
+    public function loadMoreTransactions(): void
     {
+        // If current record set has fewer transactions than page size then do
+        // not load more records
+        if ($this->transactions->isEmpty() || $this->transactions->count() < config('hawk.etherscan.blocks.per_page'))
+            return;
+
+        // Get transactions from database prior to current transactions list's
+        // last record
+        $transactions = $this
+            ->getTransactionsQuery()
+            ->where('block_number', '<', $this->transactions->last()->block_number)
+            ->get();
+
+        // If we have fewer records than page size then load more from the API
+        if ($transactions->count() < config('hawk.etherscan.blocks.per_page'))
+            // If database returned zero records then get last block number
+            // from last pagination set and use its block number as cursor for
+            // API level paginaton
+            $this->processTransactions(
+                $this->getTransactionsFromAPI(
+                    $transactions->isNotEmpty()
+                        ? $transactions->last()->block_number
+                        : $this->transactions->last()->block_number
+                )
+            );
+
+        $this->transactions = $this
+            ->transactions
+            ->concat(
+                // If fewer records were returned then load the transactions
+                // fetched from API, saved in database
+                $transactions->count() < config('hawk.etherscan.blocks.per_page')
+                    ? $this
+                    ->getTransactionsQuery()
+                    ->where('block_number', '<', $this->transactions->last()->block_number)
+                    ->get()
+                    : $transactions // If not use the already fetched records
+            )
+            ->map(function (Etherscan $transaction) {
+                return $this->convertTokenForView($transaction);
+            })
+            ->sortBy('block_number')
+            ->unique('hash');
+    }
+
+    /**
+     * Adds additional details to `\App\Models\Etherscan` model instance for
+     * accessing on frontend.
+     *
+     * @param \App\Models\Etherscan $transaction
+     *
+     * @return \App\Models\Etherscan
+     */
+    private function convertTokenForView(Etherscan $transaction): Etherscan
+    {
+        // Calculate quantity using value and decimals
+        $transaction->quantity = $this->calculateQuantity(
+            $transaction->value,
+            $transaction->token['decimals']
+        );
+
+        // Convert fee in Gwei to Ether
+        $transaction->fee = round($this->gweiToEth($transaction->gas['price']), 3);
+
+        // Convert timestamp number to `\Illuminate\Support\Carbon` instance
+        // $transaction->block_timestamp = new Carbon($transaction->block_timestamp);
+
+        return $transaction;
+    }
+
+    /**
+     * Calculates ERC20 token quantity using block value and decimal count.
+     *
+     * @param int $value
+     * @param ?int $decimals
+     *
+     * @return float
+     */
+    private function calculateQuantity(int $value, ?int $decimals = 0): float
+    {
+        if (!$value || !$decimals) return 0;
+
+        return round($value / (pow(10, $decimals)), 3);
+    }
+
+    /**
+     * Converts passed Gwei amount to ETH.
+     *
+     * @param int $gwei
+     *
+     * @return float
+     */
+    private function gweiToEth(int $gwei): float
+    {
+        return $gwei / 1000000000;
+    }
+
+    /**
+     * Converts passed Wei amount to ETH.
+     *
+     * @param int $wei
+     *
+     * @return float
+     */
+    private function weiToEth(int $wei): float
+    {
+        return $wei / 1000000000000000000;
     }
 
     /**
@@ -91,7 +245,7 @@ class EtherscanTable extends Component
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    private function getTransactionsQuery(?int $limit = self::PER_PAGE): EloquentBuilder
+    private function getTransactionsQuery(?int $limit = 0): EloquentBuilder
     {
         return Etherscan::query()
             ->where(function (EloquentBuilder $query) {
@@ -99,7 +253,8 @@ class EtherscanTable extends Component
                     ->where('accounts->from', $this->wallet)
                     ->orWhere('accounts->to', $this->wallet);
             })
-            ->limit($limit);
+            ->orderBy('block_number', 'asc')
+            ->limit($limit ?: config('hawk.etherscan.blocks.per_page'));
     }
 
     /**

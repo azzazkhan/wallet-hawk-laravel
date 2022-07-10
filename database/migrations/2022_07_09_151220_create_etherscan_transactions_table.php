@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('etherscan_transactions', function (Blueprint $table) {
             $table->id();
 
-            $table->timestamp('block_timestamp');
+            $table->unsignedInteger('block_timestamp');
             $table->unsignedInteger('block_number');
             $table->string('hash')->unique();
 

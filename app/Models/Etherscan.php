@@ -40,7 +40,7 @@ class Etherscan extends Model
      * @var array
      */
     protected $casts = [
-        'block_timestamp' => 'immutable_datetime',
+        'block_timestamp' => 'integer',
         'block_number'    => 'integer',
         'hash'            => 'string',
         'accounts'        => 'array',
