@@ -8,6 +8,7 @@ use App\Models\Etherscan;
 use Illuminate\View\View;
 use InvalidArgumentException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Symfony\Component\CssSelector\Exception\InternalErrorException;
@@ -52,6 +53,7 @@ class EtherscanTable extends Component
      */
     public function mount(): void
     {
+        Log::debug('Component mounted');
         $this->loadTransactions();
     }
 
@@ -62,6 +64,8 @@ class EtherscanTable extends Component
      */
     private function loadTransactions(): void
     {
+        Log::debug('Loading transactions for initial render');
+
         // First load transactions from database
         $this->transactions = $this
             ->getTransactionsQuery()
@@ -72,8 +76,12 @@ class EtherscanTable extends Component
             ->sortBy('block_number')
             ->unique('hash');
 
+        Log::debug(sprintf('%d transactions found in database', $this->transactions->count()));
+
         // We have transaction records
         if ($this->transactions->isNotEmpty()) return;
+
+        Log::debug('Could not find any transactions in database');
 
         // We do not have transaction records so fetch from API and store them
         // in database
@@ -91,6 +99,13 @@ class EtherscanTable extends Component
             })
             ->sortBy('block_number')
             ->unique('hash');
+
+        Log::debug(
+            sprintf(
+                'Got %d transactions from database after fetching from API',
+                $this->transactions->count()
+            )
+        );
     }
 
     /**
@@ -100,10 +115,18 @@ class EtherscanTable extends Component
      */
     public function loadMoreTransactions(): void
     {
+        Log::debug(sprintf('Loading more transactions form database for pagination', [
+            'start'        => $this->transactions->isNotEmpty() ? $this->transactions->last()->block_number : null,
+            'transactions' => $this->transactions->count()
+        ]));
+
         // If current record set has fewer transactions than page size then do
         // not load more records
-        if ($this->transactions->isEmpty() || $this->transactions->count() < config('hawk.etherscan.blocks.per_page'))
+        if ($this->transactions->isEmpty() || $this->transactions->count() < config('hawk.etherscan.blocks.per_page')) {
+            Log::debug('Current result set has less transactions than expected transactions per page, no new transactions to load');
+
             return;
+        }
 
         // Get transactions from database prior to current transactions list's
         // last record
@@ -112,11 +135,20 @@ class EtherscanTable extends Component
             ->where('block_number', '<', $this->transactions->last()->block_number)
             ->get();
 
+        Log::debug(
+            sprintf(
+                'Got %d transactions in initial database query for pagination view',
+                $transactions->count()
+            )
+        );
+
         // If we have fewer records than page size then load more from the API
-        if ($transactions->count() < config('hawk.etherscan.blocks.per_page'))
+        if ($transactions->count() < config('hawk.etherscan.blocks.per_page')) {
+            Log::debug('Received fewer records in initial database query than expected records per view');
+
             // If database returned zero records then get last block number
             // from last pagination set and use its block number as cursor for
-            // API level paginaton
+            // API level pagination
             $this->processTransactions(
                 $this->getTransactionsFromAPI(
                     $transactions->isNotEmpty()
@@ -125,23 +157,37 @@ class EtherscanTable extends Component
                 )
             );
 
+            // If fewer records were returned then load the transactions
+            // fetched from API, saved in database
+            $transactions = $this
+                ->getTransactionsQuery()
+                ->where('block_number', '<', $this->transactions->last()->block_number)
+                ->get();
+
+            Log::debug(
+                sprintf(
+                    'Fetched %d transactions from database after paginating from API',
+                    $transactions->count()
+                )
+            );
+        }
+
+        Log::debug(sprintf('Inserting %s new paginated transactions in result set', $transactions->count()));
+
         $this->transactions = $this
             ->transactions
-            ->concat(
-                // If fewer records were returned then load the transactions
-                // fetched from API, saved in database
-                $transactions->count() < config('hawk.etherscan.blocks.per_page')
-                    ? $this
-                    ->getTransactionsQuery()
-                    ->where('block_number', '<', $this->transactions->last()->block_number)
-                    ->get()
-                    : $transactions // If not use the already fetched records
-            )
+            ->concat($transactions)
             ->map(function (Etherscan $transaction) {
                 return $this->convertTokenForView($transaction);
             })
-            ->sortBy('block_number')
-            ->unique('hash');
+            ->sortBy('block_number');
+
+        Log::debug(
+            sprintf(
+                'Total transactions after paginating are %d ',
+                $this->transactions->count()
+            )
+        );
     }
 
     /**
@@ -268,6 +314,8 @@ class EtherscanTable extends Component
      */
     private function getTransactionsFromAPI(?int $start = null): null|Collection
     {
+        Log::debug('Fetching transactions from API', compact('start'));
+
         // Throw an exception if invalid wallet ID was provided
         if (!$this->wallet || !preg_match('/^0x[a-fA-F0-9]{40}$/', $this->wallet))
             throw new InvalidArgumentException('Invalid wallet ID provided!');
@@ -288,7 +336,11 @@ class EtherscanTable extends Component
         if ($response->serverError())
             throw new InternalErrorException('Could not fetch transactions!');
 
-        return collect($response->json()['result']);
+        $transactions = collect($response->json()['result']);
+
+        Log::debug(sprintf('Fetched %d transactions from API', $transactions->count()));
+
+        return $transactions;
     }
 
 
@@ -350,17 +402,24 @@ class EtherscanTable extends Component
      */
     private function saveTransactions(Collection $transactions): Collection
     {
+        Log::debug(sprintf('Received %d transactions for saving in database', $transactions->count()));
+
         // Check if any of passed transactions already exist in database or not
         $existing_transactions = Etherscan::whereIn(
             'hash',
             $transactions
+                ->unique('hash')
                 ->map(fn ($transaction) => $transaction['hash'])
                 ->toArray()
         )
             ->get();
 
+        Log::debug(sprintf('Found %d existing transactions in database', $existing_transactions->count()));
+
         // If no record exists then save and return them
-        if (!$existing_transactions || $existing_transactions->count() === 0)
+        if (!$existing_transactions || $existing_transactions->count() === 0) {
+            Log::debug('All transactions are unique and do no exist in database');
+
             return new Collection([
                 'uniques'      => count($transactions),
                 'existing'     => 0,
@@ -368,6 +427,7 @@ class EtherscanTable extends Component
                     return Etherscan::create($transaction);
                 }),
             ]);
+        }
 
         // Grab transaction hash from existing records (for filtering)
         $existing_hashes = $existing_transactions
@@ -376,18 +436,27 @@ class EtherscanTable extends Component
         $uniques = $transactions
             ->filter(fn ($transaction) => $existing_hashes->contains($transaction['hash']));
 
+        Log::debug(sprintf('There are %d unique transactions', $uniques->count()));
+
         // All records already exist in database, return those
-        if (!$uniques || $uniques->empty()) return new Collection([
-            'transactions' => $existing_transactions,
-            'existing'     => $existing_transactions->count(),
-            'uniques'      => 0,
-        ]);
+        if (!$uniques || $uniques->empty()) {
+            Log::debug('All transactions already exist in database');
+
+            return new Collection([
+                'transactions' => $existing_transactions,
+                'existing'     => $existing_transactions->count(),
+                'uniques'      => 0,
+            ]);
+        }
 
         // No record exists locally and all passed records are unique
         return new Collection([
-            'transactions' => array_merge($existing_transactions, Etherscan::create($uniques->unique('hash')->toArray())),
-            'existing'     => 0,
-            'uniques'      => $existing_transactions->count(),
+            'transactions' => array_merge(
+                $existing_transactions,
+                Etherscan::create($uniques->unique('hash')->toArray())
+            ),
+            'existing'     => $existing_transactions->count(),
+            'uniques'      => $uniques->count(),
         ]);
     }
 }
