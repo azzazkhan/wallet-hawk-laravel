@@ -72,9 +72,7 @@ class EtherscanTable extends Component
             ->get()
             ->map(function (Etherscan $transaction) {
                 return $this->convertTokenForView($transaction);
-            })
-            ->sortBy('block_number')
-            ->unique('hash');
+            });
 
         Log::debug(sprintf('%d transactions found in database', $this->transactions->count()));
 
@@ -96,9 +94,7 @@ class EtherscanTable extends Component
             ->get()
             ->map(function (Etherscan $transaction) {
                 return $this->convertTokenForView($transaction);
-            })
-            ->sortBy('block_number')
-            ->unique('hash');
+            });
 
         Log::debug(
             sprintf(
@@ -132,7 +128,7 @@ class EtherscanTable extends Component
         // last record
         $transactions = $this
             ->getTransactionsQuery()
-            ->where('block_number', '<', $this->transactions->last()->block_number)
+            ->where('block_number', '>', $this->transactions->last()->block_number)
             ->get();
 
         Log::debug(
@@ -161,7 +157,7 @@ class EtherscanTable extends Component
             // fetched from API, saved in database
             $transactions = $this
                 ->getTransactionsQuery()
-                ->where('block_number', '<', $this->transactions->last()->block_number)
+                ->where('block_number', '>', $this->transactions->last()->block_number)
                 ->get();
 
             Log::debug(
@@ -294,11 +290,7 @@ class EtherscanTable extends Component
     private function getTransactionsQuery(?int $limit = 0): EloquentBuilder
     {
         return Etherscan::query()
-            ->where(function (EloquentBuilder $query) {
-                return $query
-                    ->where('accounts->from', $this->wallet)
-                    ->orWhere('accounts->to', $this->wallet);
-            })
+            ->where('wallet', $this->wallet)
             ->orderBy('block_number', 'asc')
             ->limit($limit ?: config('hawk.etherscan.blocks.per_page'));
     }
@@ -374,6 +366,8 @@ class EtherscanTable extends Component
                 'usd'             => $transaction['gasUsed'],
             ],
 
+            'wallet' => $this->wallet,
+
             // Additional details
             'hash'  => $transaction['hash'],
             'confirmations' => (int) $transaction['confirmations'],
@@ -405,13 +399,14 @@ class EtherscanTable extends Component
         Log::debug(sprintf('Received %d transactions for saving in database', $transactions->count()));
 
         // Check if any of passed transactions already exist in database or not
-        $existing_transactions = Etherscan::whereIn(
-            'hash',
-            $transactions
-                ->unique('hash')
-                ->map(fn ($transaction) => $transaction['hash'])
-                ->toArray()
-        )
+        $existing_transactions = Etherscan::where('wallet', $this->wallet)
+            ->whereIn(
+                'hash',
+                $transactions
+                    ->unique('hash')
+                    ->map(fn ($transaction) => $transaction['hash'])
+                    ->toArray()
+            )
             ->get();
 
         Log::debug(sprintf('Found %d existing transactions in database', $existing_transactions->count()));

@@ -18,7 +18,9 @@ return new class extends Migration
 
             $table->unsignedInteger('block_timestamp');
             $table->unsignedInteger('block_number');
-            $table->string('hash')->unique();
+            $table->string('hash');
+
+            $table->string('wallet');
 
             $table->json('accounts'); // Recipients information
             $table->json('gas'); // Pricing details
@@ -29,6 +31,8 @@ return new class extends Migration
             $table->unsignedBigInteger('value');
             $table->string('input');
 
+            $table->unique(['wallet', 'hash']);
+            $table->unique(['wallet', 'block_number']);
 
             $table->timestamps();
         });

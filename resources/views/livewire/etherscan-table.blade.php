@@ -4,7 +4,7 @@
             {{-- `$transactions` is a non-empty collection, we can iterate over it --}}
             @foreach ($transactions as $transaction)
                 <x-flowbite.table.row>
-                    <td class="text-center">{{ $loop->index + 1 }}</td>
+                    <td class="text-center">{{ $transaction->id }}</td>
 
                     <!-- Asset Name -->
                     <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
@@ -63,7 +63,7 @@
                         </x-flowbite.tooltip>
 
                         <div data-tooltip-target="{{ $__id }}">
-                            {{ $__timestamp->format('c') }}
+                            {{ $__timestamp->format('d-m-Y h:i:s A') }}
                         </div>
                     </td>
                 </x-flowbite.table.row>
