@@ -15,8 +15,10 @@ return new class extends Migration
     {
         Schema::create('opensea_transactions', function (Blueprint $table) {
             $table->id();
+            $table->string('wallet');
+
             $table->enum('schema', config('hawk.opensea.event.schema'));
-            $table->unsignedInteger('event_id')->unique();
+            $table->unsignedInteger('event_id');
             $table->enum('event_type', config('hawk.opensea.event.types'));
             $table->timestamp('event_timestamp');
 
@@ -26,6 +28,8 @@ return new class extends Migration
             $table->json('payment_token')->nullable(); // [decimals, symbol, eth, usd]
             $table->json('contract'); // [address, type, date]
             $table->json('accounts'); // [from, to, winner, seller]
+
+            $table->unique(['wallet', 'event_id']);
 
             $table->timestamps();
         });

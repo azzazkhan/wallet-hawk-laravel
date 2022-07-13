@@ -17,7 +17,8 @@ return [
             'per_page' => (int) env('OPENSEA_RECORDS_PER_PAGE', 20)
         ],
         'network' => [
-            'max_calls' => (int) env('OPENSEA_MAX_API_CALLS', 20)
+            'max_calls_sec' => (int) env('OPENSEA_MAX_API_CALLS', 20),
+            'max_calls_daily' => (int) env('OPENSEA_MAX_API_CALLS_DAILY', INF)
         ],
         'limits' => [
             'default' => (int) env('OPENSEA_LOCK_DURATION', 0),

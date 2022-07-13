@@ -58,7 +58,7 @@ class EtherscanTable extends Component
     }
 
     /**
-     * Loads transactions in for initial render.
+     * Loads transactions for initial render.
      *
      * @return void
      */
