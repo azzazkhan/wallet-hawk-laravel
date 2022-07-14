@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum('schema', config('hawk.opensea.event.schema'));
             $table->unsignedInteger('event_id');
             $table->enum('event_type', config('hawk.opensea.event.types'));
-            $table->timestamp('event_timestamp');
+            $table->unsignedInteger('event_timestamp');
 
             // [images => [url, original, preview, thumbnail], animation => [url, original]]
             $table->json('media')->nullable();

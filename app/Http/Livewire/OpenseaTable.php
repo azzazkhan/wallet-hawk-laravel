@@ -24,6 +24,27 @@ class OpenseaTable extends Component
     public $wallet;
 
     /**
+     * Opensea event type filter
+     *
+     * @var string
+     */
+    public string $event_type;
+
+    /**
+     * Start date filter
+     *
+     * @var int
+     */
+    public int $start_date;
+
+    /**
+     * End date filter
+     *
+     * @var int
+     */
+    public int $end_date;
+
+    /**
      * Fetched and processed events
      *
      * @var \Illuminate\Support\Collection<\App\Models\Opensea>
@@ -69,6 +90,7 @@ class OpenseaTable extends Component
     public function getMoreEvents(): void
     {
     }
+
 
     /**
      * Adds additional details to `\App\Models\Opensea` model instance for

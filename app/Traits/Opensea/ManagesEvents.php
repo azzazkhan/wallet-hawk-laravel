@@ -5,7 +5,7 @@ namespace App\Traits\Opensea;
 use App\Models\Opensea;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Contracts\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Carbon;
 
 trait ManagesEvents
@@ -175,11 +175,22 @@ trait ManagesEvents
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    private function getEventsQuery(string $wallet, ?int $limit = 0): EloquentBuilder
-    {
+    private function getEventsQuery(
+        string $wallet,
+        ?string $type = null,
+        ?int $limit = 0
+    ): EloquentBuilder {
         return Opensea::query()
+            // Grab records for passed wallet address
             ->where('wallet', $wallet)
+            // If event type is specified then grab events of only specified event type
+            ->when(
+                is_string($type) && in_array($type, config('hawk.opensea.event.types')),
+                fn (EloquentBuilder $builder) => $builder->where('event_type', $type)
+            )
+            // Sort by occurrence time
             ->orderBy('event_timestamp', 'asc')
+            // If limit is specified then limit the records
             ->limit($limit ?: config('hawk.opensea.event.per_page'));
     }
 }

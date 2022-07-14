@@ -50,8 +50,8 @@ trait InteractsWithApi
                 'account_address' => $wallet,
                 'event_type'      => in_array($type, config('hawk.opensea.event.types')) ? $type : null,
                 'cursor'          => $cursor && preg_match('/(([A-z0-9])=?){60,}$/', $cursor) ? $cursor : null,
-                'occurred_before' => $before_date,
-                'occurred_after'  => $after_date,
+                'occurred_before' => max($before_date, $after_date),
+                'occurred_after'  => min($before_date, $after_date),
             ]);
 
         // Decrement the counter so freed up resources can be used by other
