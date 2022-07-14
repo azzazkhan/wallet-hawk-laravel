@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', 'HomeController@index')->name('home');
-Route::get('/transactions', 'TransactionsController@index')->name('transactions');
 Route::view('/faqs', 'faqs')->name('faqs');
 Route::post('/subscribe', 'SubscriptionsController@subscribe')->name('subscribe');
+
+Route::get('/transactions', 'TransactionsController@index')->name('transactions');
+Route::get('/transactions/{event_id}', 'TransactionsController@index')->name('transactions.single');

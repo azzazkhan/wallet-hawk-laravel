@@ -25,10 +25,10 @@ trait InteractsWithApi
      */
     private function getEventsFromAPI(
         string $wallet,
-        ?string $type,
-        ?string $cursor,
-        ?int $before_date,
-        ?int $after_date,
+        ?string $type = null,
+        ?string $cursor = null,
+        ?int $before_date = null,
+        ?int $after_date = null,
     ): array {
         // Increment the daily API calls counter, if daily limit is reached an
         // exception will be thrown and 503 service unavailable response will

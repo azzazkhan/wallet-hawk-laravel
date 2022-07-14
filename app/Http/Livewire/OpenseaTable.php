@@ -11,10 +11,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use App\Traits\Opensea\ManagesEvents;
 use App\Traits\Opensea\InteractsWithApi;
+use App\Traits\Opensea\InteractsWithWallet;
 
 class OpenseaTable extends Component
 {
-    use HasCounter, ManagesEvents, InteractsWithApi;
+    use HasCounter, ManagesEvents, InteractsWithApi, InteractsWithWallet;
 
     /**
      * Wallet address being searched
@@ -26,23 +27,30 @@ class OpenseaTable extends Component
     /**
      * Opensea event type filter
      *
-     * @var string
+     * @var ?string
      */
-    public string $event_type;
+    public ?string $event_type;
 
     /**
      * Start date filter
      *
-     * @var int
+     * @var ?int
      */
-    public int $start_date;
+    public ?int $start_date;
 
     /**
      * End date filter
      *
-     * @var int
+     * @var ?int
      */
-    public int $end_date;
+    public ?int $end_date;
+
+    /**
+     * Opensea pagination cursor.
+     *
+     * @var ?string
+     */
+    public ?string $cursor;
 
     /**
      * Fetched and processed events
@@ -65,6 +73,7 @@ class OpenseaTable extends Component
      */
     public function mount()
     {
+        $this->getInitialEvents();
     }
 
     /**
@@ -85,6 +94,10 @@ class OpenseaTable extends Component
     public function getInitialEvents(): void
     {
         Log::debug('Loading events for initial render');
+
+        $response = $this->getEventsFromAPI($this->wallet);
+
+        dd($response);
     }
 
     public function getMoreEvents(): void
