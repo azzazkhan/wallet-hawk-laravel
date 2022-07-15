@@ -2,10 +2,7 @@
 
 namespace App\Http\Livewire;
 
-use CStr;
-use App\Models\Opensea;
 use Livewire\Component;
-use Illuminate\Support\Carbon;
 use App\Traits\Opensea\HasCounter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -50,7 +47,7 @@ class OpenseaTable extends Component
      *
      * @var ?string
      */
-    public ?string $cursor;
+    public ?string $cursor = null;
 
     /**
      * Fetched and processed events
@@ -58,6 +55,13 @@ class OpenseaTable extends Component
      * @var \Illuminate\Support\Collection<\App\Models\Opensea>
      */
     public Collection $events;
+
+    /**
+     * Error message
+     *
+     * @var ?string
+     */
+    public ?string $error;
 
     /**
      * Query string synchronized with internal component state
@@ -95,44 +99,94 @@ class OpenseaTable extends Component
     {
         Log::debug('Loading events for initial render');
 
-        $response = $this->getEventsFromAPI($this->wallet);
+        if ($this->hasCooledDown($this->wallet)) {
+            Log::debug('Wallet has cooled down, fetching new records from API');
 
-        dd($response);
-    }
+            $response = $this->getEventsFromAPI($this->wallet);
 
-    public function getMoreEvents(): void
-    {
-    }
+            ['events' => $events, 'uniques' => $uniques, 'existing' => $existing] = $this
+                ->processEvents(
+                    $this->wallet,
+                    $response['asset_events']
+                );
 
-
-    /**
-     * Adds additional details to `\App\Models\Opensea` model instance for
-     * accessing on frontend.
-     *
-     * @param string $wallet
-     * @param \App\Models\Opensea $event
-     *
-     * @return \App\Models\Opensea
-     */
-    private function convertTokenForView(string $wallet, Opensea $event): Opensea
-    {
-        $image            = $event['media']['image'];
-        $event->thumbnail = ($image['thumbnail'] ?: $image['url']) ?: $image['original'];
-        $event->name      = $event->asset['name'];
-        $event->direction = $event->accounts['to'] == $wallet || $event->accounts['winner'] == $wallet
-            ? 'IN' : 'OUT';
-        $event->from      = $event->accounts['from'] ?: $event->accounts['seller'];
-        $event->to        = $event->accounts['to'] ?: $event->accounts['winner'];
-        $event->value     = '0 ETH, 0 USD';
-        $event->timestamp = new Carbon($event->event_timestamp);
-
-        if (CStr::isValidArray($event->payment_token))
-            $event->value = sprintf(
-                '%s ETH, %s USD',
-                substr($event->payment_token['eth'], 0, 6),
-                substr($event->payment_token['usd'], 0, 6)
+            Log::debug(
+                sprintf('%d total events retrieved from API', $events->count()),
+                compact('uniques', 'existing')
             );
 
-        return $event;
+            $this->updateLockout($this->wallet);
+
+            $this->events = $events;
+            $this->cursor = $response['next'];
+            return;
+        }
+
+        Log::debug('Wallet has not cooled down yet, fetching from database');
+        $this->events = $this
+            ->getEventsQuery($this->wallet)
+            ->get();
+
+        Log::debug(sprintf('%d events found in database', $this->events->count()));
+    }
+
+    public function loadMoreEvents(): void
+    {
+        $this->error = null;
+
+        Log::debug('Loading more events');
+
+        if ($this->events->count() < config('hawk.opensea.event.per_page')) {
+            Log::debug('Previous page size was small this means no new events');
+            return;
+        }
+
+        // If wallet is indexed then fetch from database
+        if ($this->isIndexed($this->wallet)) {
+            Log::debug('Wallet is indexed, fetching from database');
+
+            $events = $this
+                ->getEventsQuery($this->wallet)
+                ->where('event_timestamp', '<', $this->events->last()->event_timestamp)
+                ->get();
+
+            $this->events = $this
+                ->events
+                ->concat($events)
+                ->sortByDesc('event_timestamp');
+
+            return;
+        }
+
+        Log::debug('Wallet is not indexed fetching from API');
+
+        $response = $this->getEventsFromAPI(
+            $this->wallet,
+            cursor: $this->cursor,
+            before_date: !$this->cursor ? $this->events->last()->event_timestamp : null
+        );
+
+        Log::debug(sprintf('Received %d events from API', count($response['asset_events'])));
+
+        ['events' => $events, 'uniques' => $uniques, 'existing' => $existing] = $this
+            ->processEvents(
+                $this->wallet,
+                $response['asset_events']
+            );
+
+        // API returned fewer records, this means we have reached till end
+        if (count($response['asset_events']) < config('hawk.opensea.event.per_page')) {
+            Log::debug('API sent fewer events, this means we have reached till end');
+            $this->setIndexed($this->wallet);
+        }
+
+        $this->events = $this
+            ->events
+            ->concat($events)
+            ->sortByDesc('event_timestamp');
+
+        Log::debug(sprintf('Total events are now %d', $this->events->count()));
+
+        dd($this->events);
     }
 }

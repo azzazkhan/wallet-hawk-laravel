@@ -125,6 +125,60 @@ trait InteractsWithWallet
     }
 
     /**
+     * Checks if all Opensea events are indexed for this wallet or not.
+     *
+     * @param string $wallet_id
+     *
+     * @return bool
+     */
+    private function isIndexed(string $wallet_id): bool
+    {
+        Log::debug('Checking if wallet is indexed or not');
+        $wallet = $this->getWallet($wallet_id);
+
+        if (!$wallet) {
+            Log::debug('Wallet record does not exists it means it is not indexed');
+            return false;
+        }
+
+        $indexed = $wallet->opensea_indexed;
+
+        if ($indexed)
+            Log::debug('Wallet is indexed');
+        else
+            Log::debug('Wallet is not indexed');
+
+
+        return $indexed ? true : false;
+    }
+
+    /**
+     * Sets specified wallet address as indexed, indicating that all Opensea
+     * events have been cached for this wallet address.
+     *
+     * @param string $wallet_id
+     *
+     * @return void
+     */
+    private function setIndexed(string $wallet_id): void
+    {
+        Log::debug('Setting wallet address as opensea indexed');
+
+        $wallet = $this->getWallet($wallet_id);
+
+        if (!$wallet) {
+            Log::debug('Wallet record does not exists, creating new one and setting as indexed');
+            $this->createWallet($wallet_id, ['opensea_indexed' => true]);
+            return;
+        }
+
+        Log::debug('Wallet exists, setting wallet as opensea indexed');
+        $wallet->update(['opensea_indexed' => true]);
+
+        Log::debug('Successfully updated opensea index status');
+    }
+
+    /**
      * Checks if record exists for specified wallet address or not.
      *
      * @param string $wallet_id
@@ -151,10 +205,11 @@ trait InteractsWithWallet
      * returns existing record if record for same wallet already exists.
      *
      * @param string $wallet_id
+     * @param ?array $attrs
      *
      * @return \App\Models\Wallet
      */
-    private function createWallet(string $wallet_id): Wallet
+    private function createWallet(string $wallet_id, ?array $attrs = []): Wallet
     {
         Log::debug('Creating new record for wallet');
 
@@ -162,7 +217,7 @@ trait InteractsWithWallet
 
         if (!$wallet) {
             Log::debug('Wallet record does not exist, creating new one');
-            return Wallet::create(['wallet_id' => $wallet]);
+            return Wallet::create(['wallet_id' => $wallet_id, ...$attrs]);
         }
 
         Log::debug('Wallet record already exist, returning existing record');

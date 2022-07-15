@@ -24,7 +24,7 @@ class Opensea extends Model
     protected $fillable = [
         'wallet',
         'schema',
-        'asset_id',
+        'event_id',
         'event_type',
         'event_timestamp',
         'media',

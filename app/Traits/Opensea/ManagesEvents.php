@@ -17,15 +17,15 @@ trait ManagesEvents
      * records count.
      *
      * @param string $wallet
-     * @param \Illuminate\Support\Collection<array> $events
+     * @param \Illuminate\Support\array<array> $events
      *
      * @return \Illuminate\Support\Collection<mixed>
      */
-    private function processEvents(string $wallet, Collection $events): Collection
+    private function processEvents(string $wallet, array $events): Collection
     {
         return $this->saveEvents(
             $wallet,
-            $events->map(function ($event) use ($wallet) {
+            collect($events)->map(function ($event) use ($wallet) {
                 return $this->parseEvent($wallet, $event);
             })
         );
@@ -140,7 +140,7 @@ trait ManagesEvents
             ->map(fn (Opensea $event) => $event['event_id']);
 
         $uniques = $events
-            ->filter(fn (Opensea $event) => !$existing_ids->contains($event['event_id']));
+            ->filter(fn (array $event) => !$existing_ids->contains($event['event_id']));
 
         Log::debug(sprintf('There are %d unique events', $uniques->count()));
 
@@ -189,7 +189,7 @@ trait ManagesEvents
                 fn (EloquentBuilder $builder) => $builder->where('event_type', $type)
             )
             // Sort by occurrence time
-            ->orderBy('event_timestamp', 'asc')
+            ->orderBy('event_timestamp', 'desc')
             // If limit is specified then limit the records
             ->limit($limit ?: config('hawk.opensea.event.per_page'));
     }

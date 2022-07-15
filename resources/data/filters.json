@@ -1,13 +1,5 @@
 [
   {
-    "label": "Schema",
-    "id": "schema",
-    "options": [
-      { "label": "ERC721/ERC1155", "value": "opensea" },
-      { "label": "ERC20", "value": "ERC20" }
-    ]
-  },
-  {
     "label": "Event",
     "id": "event",
     "options": [

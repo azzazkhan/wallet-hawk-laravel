@@ -1,8 +1,32 @@
 <div>
+    @if ($error && strlen($error) > 0)
+        <div class="fixed z-50 flex items-center py-3 text-sm font-medium text-center text-white transform -translate-x-1/2 translate-y-2 bg-red-600 rounded-md bottom-10 left-1/2 px-7">
+            {{ $error }}
+        </div>
+    @endif
     <x-flowbite.table.component :columns="['ID', 'Item', 'In/Out', 'From', 'To', 'Type', 'Event Type', 'Value', 'Time']" editable>
         @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
             {{-- `$events` is a non-empty collection, we can iterate over it --}}
             @foreach ($events as $event)
+                @php
+                    $__wallet         = strtolower($wallet);
+                    $image            = $event['media']['image'];
+                    $event->thumbnail = ($image['thumbnail'] ?: $image['url']) ?: $image['original'];
+                    $event->name      = $event->asset['name'];
+                    $event->direction = $event->accounts['to'] == $__wallet || $event->accounts['winner'] == $__wallet
+                        ? 'IN' : 'OUT';
+                    $event->from      = $event->accounts['from'] ?: $event->accounts['seller'];
+                    $event->to        = $event->accounts['to'] ?: $event->accounts['winner'];
+                    $event->value     = '0 ETH, 0 USD';
+                    $event->timestamp = new \Illuminate\Support\Carbon($event->event_timestamp);
+
+                    if ($event->payment_token && is_array($event->payment_token))
+                        $event->value = sprintf(
+                            '%s ETH, %s USD',
+                            substr($event->payment_token['eth'], 0, 6),
+                            substr($event->payment_token['usd'], 0, 6)
+                        );
+                @endphp
                 <x-flowbite.table.row
                     action="{{ route('transactions.single', $event->event_id) }}"
                 >
@@ -63,6 +87,16 @@
                         {{ strtoupper($event->schema) }}
                     </td>
 
+                    <!-- Event Type -->
+                    <td class="px-6 py-4">
+                        {{ $event->event_type }}
+                    </td>
+
+                    <!-- Asset Value -->
+                    <td class="px-6 py-4">
+                        {{ $event->value }}
+                    </td>
+
                     <!-- Timestamp -->
                     <td class="px-6 py-4">
                         @php
@@ -94,7 +128,7 @@
         <button
             type="button"
             class="flex items-center h-10 px-5 mx-auto my-10 font-medium text-white transition-all bg-blue-500 rounded-md cursor-pointer hover:bg-blue-700"
-            wire:click="loadMoreTransactions"
+            wire:click="loadMoreEvents"
             wire:loading.class="cursor-wait pointer-events-none opacity-60"
             wire:loading.attr="disabled"
         >
