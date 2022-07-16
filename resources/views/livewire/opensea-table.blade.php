@@ -1,3 +1,4 @@
+@php $__modal_id = CStr::id('filter_modal') @endphp
 <div>
     @if ($error && strlen($error) > 0)
         <div class="fixed z-50 flex items-center py-3 text-sm font-medium text-center text-white transform -translate-x-1/2 translate-y-2 bg-red-600 rounded-md bottom-10 left-1/2 px-7">
@@ -11,6 +12,7 @@
     @endif
 
     <div class="flex flex-col mt-10 space-y-4 select-none">
+        <!-- Desktop filters -->
         <div class="items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow md:flex">
             <!-- Asset token type selection -->
             <div class="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
@@ -84,6 +86,96 @@
                 <span wire:target="filterEvents" wire:loading>Filtering</span>
             </button>
         </div>
+
+        <!-- Mobile filters trigger -->
+        <div class="flex items-center justify-end mb-4 md:hidden">
+            <button
+                type="button"
+                data-modal-toggle="{{ $__modal_id }}"
+                class="h-10 px-6 text-sm font-medium text-white transition-colors bg-blue-500 rounded-md cursor-pointer hover:bg-blue-600"
+            >
+                <i class="inline-block mr-1 text-xs fas fa-filter" aria-hidden="true"></i>
+                Filters
+            </button>
+        </div>
+
+        <!-- Mobile filters modal -->
+        <x-flowbite.modal.popup id="{{ $__modal_id }}">
+            <div class="flex flex-col space-y-4">
+                <!-- Event type filter -->
+                <div class="flex flex-col space-y-1">
+                    @php $id = CStr::id('filter_field') @endphp
+                    <label for="{{ $id }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                        Event Type
+                    </label>
+                    <select
+                        id="{{ $id }}"
+                        name="event_type"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        wire:modal="event_type"
+                    >
+                        <option value="all">All</option>
+                        <option value="created">Created</option>
+                        <option value="successful">Successful</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="bid_entered">Bid Entered</option>
+                        <option value="bid_withdrawn">Bid Withdrawn</option>
+                        <option value="transfer">Transfer</option>
+                        <option value="offer_ended">Offer Ended</option>
+                        <option value="approved">Approved</option>
+                    </select>
+                </div>
+
+                <!-- Start date filter -->
+                <div class="flex flex-col space-y-1">
+                    @php $id = CStr::id('filter_field') @endphp
+                    <label for="{{ $id }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                        Start Date
+                    </label>
+                    <input
+                        type="date"
+                        id="{{ $id }}"
+                        name="start_date"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        wire:modal="start_date"
+                    />
+                </div>
+
+                <!-- End date filter -->
+                <div class="flex flex-col space-y-1">
+                    @php $id = CStr::id('filter_field') @endphp
+                    <label for="{{ $id }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                        End Date
+                    </label>
+                    <input
+                        type="date"
+                        id="{{ $id }}"
+                        name="end_date"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        wire:modal="end_date"
+                    />
+                </div>
+            </div>
+
+            <!-- Filter apply and cancel buttons -->
+            <div class="flex mt-6 space-x-2">
+                <button
+                    data-modal-toggle="{{ $__modal_id }}"
+                    type="submit"
+                    class="text-white bg-blue-500 hover:bg-blue-600 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
+                    wire:loading.class="cursor-wait pointer-events-none opacity-60"
+                    wire:loading.attr="disabled"
+                    wire:click="filterEvents"
+                    wire:target="filterEvents"
+                >
+                    <span wire:target="filterEvents" wire:loading.remove>Apply</span>
+                    <span wire:target="filterEvents" wire:loading>Filtering</span>
+                </button>
+                <x-flowbite.modal.cancel id="{{ $__modal_id }}">
+                    Cancel
+                </x-flowbite.modal.cancel>
+            </div>
+        </x-flowbite.modal.popup>
 
         <x-flowbite.table.component :columns="['ID', 'Item', 'In/Out', 'From', 'To', 'Type', 'Event Type', 'Value', 'Time']" editable>
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())

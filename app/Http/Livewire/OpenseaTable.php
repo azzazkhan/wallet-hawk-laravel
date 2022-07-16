@@ -143,7 +143,9 @@ class OpenseaTable extends Component
                 compact('uniques', 'existing')
             );
 
-            $this->updateLockout($this->wallet);
+            // If existing records are returned set new timeout
+            if ($existing > 0)
+                $this->updateLockout($this->wallet);
 
             $this->events = $events;
             $this->cursor = $response['next'];
@@ -289,6 +291,13 @@ class OpenseaTable extends Component
         ['events' => $events] = $this->processEvents($this->wallet, $response['asset_events']);
 
         $this->events = $events;
+    }
+
+    public function clearFilters(): void
+    {
+        $this->start_date = null;
+        $this->end_date = null;
+        $this->event_type = null;
     }
 
     private function getFilters(): array
