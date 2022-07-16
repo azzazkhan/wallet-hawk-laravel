@@ -122,7 +122,7 @@ trait HasCounter
             throw new ServiceUnavailableHttpException(5, 'Daily API calls limit is reached!');
 
         Cache::increment(static::$__counter_daily_limit_key);
-        Log::debug('Incremented daily calls counter successfuly');
+        Log::debug('Incremented daily calls counter successfully');
     }
 
     /**
