@@ -177,10 +177,10 @@
             </div>
         </x-flowbite.modal.popup>
 
-        <x-flowbite.table.component :columns="['ID', 'Item', 'In/Out', 'From', 'To', 'Type', 'Event Type', 'Value', 'Time']" editable>
+        <x-flowbite.table.component :columns="['Item', 'In/Out', 'From', 'To', 'Type', 'Event Type', 'Value', 'Time']" editable>
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
                 {{-- `$events` is a non-empty collection, we can iterate over it --}}
-                @foreach ($events as $event)
+                @foreach ($events->sortByDesc('event_timestamp') as $event)
                     @php
                         $__wallet         = strtolower($wallet);
                         $image            = $event['media']['image'];
@@ -203,8 +203,6 @@
                     <x-flowbite.table.row
                         action="{{ route('transactions.single', $event->event_id) }}"
                     >
-                        <td class="text-center">{{ $event->id }}</td>
-
                         <!-- Asset Name -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
                             <div class="flex items-center space-x-2">
@@ -290,7 +288,7 @@
             @else
                 <!-- No transaction records available :( -->
                 <x-flowbite.table.row>
-                    <th colspan="10" class="py-3 font-semibold text-center text-gray-500">
+                    <th colspan="9" class="py-3 font-semibold text-center text-gray-500">
                         No transactions were found
                     </th>
                 </x-flowbite.table.row>

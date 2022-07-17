@@ -2,11 +2,11 @@
 
 namespace App\Http\Livewire;
 
-use App\Models\Wallet;
 use Livewire\Component;
 use App\Models\Etherscan;
 use Illuminate\View\View;
 use InvalidArgumentException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -21,6 +21,34 @@ class EtherscanTable extends Component
      * @var string
      */
     public $wallet;
+
+    /**
+     * Start date filter
+     *
+     * @var ?string
+     */
+    public ?string $start_date = null;
+
+    /**
+     * End date filter
+     *
+     * @var ?string
+     */
+    public ?string $end_date = null;
+
+    /**
+     * Block direction
+     *
+     * @var ?string
+     */
+    public ?string $direction = null;
+
+    /**
+     * Records are filtered or not.
+     *
+     * @var bool
+     */
+    public bool $filtered = false;
 
     /**
      * Fetched and processed transactions
@@ -69,10 +97,7 @@ class EtherscanTable extends Component
         // First load transactions from database
         $this->transactions = $this
             ->getTransactionsQuery()
-            ->get()
-            ->map(function (Etherscan $transaction) {
-                return $this->convertTokenForView($transaction);
-            });
+            ->get();
 
         Log::debug(sprintf('%d transactions found in database', $this->transactions->count()));
 
@@ -91,10 +116,7 @@ class EtherscanTable extends Component
         // them
         $this->transactions = $this
             ->getTransactionsQuery()
-            ->get()
-            ->map(function (Etherscan $transaction) {
-                return $this->convertTokenForView($transaction);
-            });
+            ->get();
 
         Log::debug(
             sprintf(
@@ -121,6 +143,17 @@ class EtherscanTable extends Component
         if ($this->transactions->isEmpty() || $this->transactions->count() < config('hawk.etherscan.blocks.per_page')) {
             Log::debug('Current result set has less transactions than expected transactions per page, no new transactions to load');
 
+            return;
+        }
+
+        if ($this->filtered) {
+            $this->transactions =
+                $this->transactions->concat(
+                    $this
+                        ->getFilterQuery()
+                        ->offset($this->transactions->count())
+                        ->get()
+                );
             return;
         }
 
@@ -173,9 +206,6 @@ class EtherscanTable extends Component
         $this->transactions = $this
             ->transactions
             ->concat($transactions)
-            ->map(function (Etherscan $transaction) {
-                return $this->convertTokenForView($transaction);
-            })
             ->sortBy('block_number');
 
         Log::debug(
@@ -194,22 +224,22 @@ class EtherscanTable extends Component
      *
      * @return \App\Models\Etherscan
      */
-    private function convertTokenForView(Etherscan $transaction): Etherscan
-    {
-        // Calculate quantity using value and decimals
-        $transaction->quantity = $this->calculateQuantity(
-            $transaction->value,
-            $transaction->token['decimals']
-        );
+    // private function convertTokenForView(Etherscan $transaction): Etherscan
+    // {
+    //     // Calculate quantity using value and decimals
+    //     $transaction->quantity = $this->calculateQuantity(
+    //         $transaction->value,
+    //         $transaction->token['decimals']
+    //     );
 
-        // Convert fee in Gwei to Ether
-        $transaction->fee = round($this->gweiToEth($transaction->gas['price']), 3);
+    //     // Convert fee in Gwei to Ether
+    //     $transaction->fee = round($this->gweiToEth($transaction->gas['price']), 3);
 
-        // Convert timestamp number to `\Illuminate\Support\Carbon` instance
-        // $transaction->block_timestamp = new Carbon($transaction->block_timestamp);
+    //     // Convert timestamp number to `\Illuminate\Support\Carbon` instance
+    //     // $transaction->block_timestamp = new Carbon($transaction->block_timestamp);
 
-        return $transaction;
-    }
+    //     return $transaction;
+    // }
 
     /**
      * Calculates ERC20 token quantity using block value and decimal count.
@@ -219,12 +249,12 @@ class EtherscanTable extends Component
      *
      * @return float
      */
-    private function calculateQuantity(int $value, ?int $decimals = 0): float
-    {
-        if (!$value || !$decimals) return 0;
+    // private function calculateQuantity(int $value, ?int $decimals = 0): float
+    // {
+    //     if (!$value || !$decimals) return 0;
 
-        return round($value / (pow(10, $decimals)), 3);
-    }
+    //     return round($value / (pow(10, $decimals)), 3);
+    // }
 
     /**
      * Converts passed Gwei amount to ETH.
@@ -233,32 +263,10 @@ class EtherscanTable extends Component
      *
      * @return float
      */
-    private function gweiToEth(int $gwei): float
-    {
-        return $gwei / 1000000000;
-    }
-
-    /**
-     * Converts passed Wei amount to ETH.
-     *
-     * @param int $wei
-     *
-     * @return float
-     */
-    private function weiToEth(int $wei): float
-    {
-        return $wei / 1000000000000000000;
-    }
-
-    /**
-     * Checks if wallet record exists for stored wallet ID or not.
-     *
-     * @return bool
-     */
-    private function walletExists(): bool
-    {
-        return Wallet::where('wallet_id', $this->wallet)->count() > 0;
-    }
+    // private function gweiToEth(int $gwei): float
+    // {
+    //     return $gwei / 1000000000;
+    // }
 
     /**
      * Parses collection of raw ERC20 transactions (fetched from API) using
@@ -358,6 +366,8 @@ class EtherscanTable extends Component
             'block_timestamp' => (int) $transaction['timeStamp'],
             'block_number'    => (int) $transaction['blockNumber'],
 
+            'direction' => strtolower($transaction['from']) == strtolower($this->wallet) ? 'OUT' : 'IN',
+
             // Pricing (GAS)
             'gas' => [
                 'cumulativeUsage' => $transaction['cumulativeGasUsed'],
@@ -453,5 +463,43 @@ class EtherscanTable extends Component
             'existing'     => $existing_transactions->count(),
             'uniques'      => $uniques->count(),
         ]);
+    }
+
+    private function getFilters(): array
+    {
+        $start_date = $this->start_date ? (int) (new Carbon($this->start_date))->format('U') : null;
+        $end_date = $this->end_date ? (int) (new Carbon($this->start_date))->format('U') : null;
+
+        return [
+            'start_date' => $start_date || $end_date ? max($start_date, $end_date) : null,
+            'end_date'   => $start_date || $end_date ? min($start_date, $end_date) : null,
+            'direction'  => in_array(strtoupper($this->direction), ['IN', 'OUT'])
+                ? strtoupper($this->direction)
+                : null
+        ];
+    }
+
+    public function filterTransactions(): void
+    {
+        $this->filtered = true;
+
+        $this->transactions = $this
+            ->getFilterQuery()
+            ->get();
+    }
+
+    private function getFilterQuery(): EloquentBuilder
+    {
+        [
+            'start_date' => $start_date,
+            'end_date'   => $end_date,
+            'direction'  => $direction
+        ] = $this->getFilters();
+
+        return $this
+            ->getTransactionsQuery()
+            ->when($start_date, fn (EloquentBuilder $query) => $query->where('block_timestamp', '<', $start_date))
+            ->when($end_date, fn (EloquentBuilder $query) => $query->where('block_timestamp', '>', $end_date))
+            ->when($direction, fn (EloquentBuilder $query) => $query->where('direction', $direction));
     }
 }

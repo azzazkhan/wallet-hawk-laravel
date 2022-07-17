@@ -1,83 +1,169 @@
 <div>
-    <x-flowbite.table.component :columns="['ID', 'Item', 'In/Out', 'Quantity', 'From', 'To', 'Txn Fee', 'Time']">
-        @if ($transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty())
-            {{-- `$transactions` is a non-empty collection, we can iterate over it --}}
-            @foreach ($transactions as $transaction)
+    <div class="flex flex-col mt-10 space-y-4 select-none">
+        <!-- Desktop filters -->
+        <div class="items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow md:flex">
+            <!-- Asset token type selection -->
+            <div class="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
+                <a href="{{ route('transactions', ['wallet' => request()->query('wallet')]) }}" class="flex items-center px-3 text-sm transition-colors hover:bg-blue-600 hover:text-white">ERC1155/ERC721</a>
+                <a href="#" class="flex items-center px-3 text-sm text-gray-500 bg-gray-200 cursor-not-allowed pointer-events-none">ERC20</a>
+            </div>
+
+            <!-- Block direction -->
+            <div class="flex items-center space-x-2">
+                @php $id = CStr::id('filter_field') @endphp
+
+                <label for="{{ $id }}" class="text-sm font-medium">Direction</label>
+
+                <select
+                    name="direction"
+                    id="{{ $id }}"
+                    class="h-10 text-sm bg-white border border-gray-200 rounded-md"
+                    wire:model="direction"
+                >
+                    <option value="both">Both</option>
+                    <option value="in">IN</option>
+                    <option value="out">OUT</option>
+                </select>
+            </div>
+
+            <!-- Start Date Filter -->
+            <div class="flex items-center space-x-2">
+                @php $id = CStr::id('filter_field') @endphp
+
+                <label for="{{ $id }}" class="text-sm font-medium">Start</label>
+
+                <input
+                    type="date"
+                    id="{{ $id }}"
+                    class="h-10 text-sm bg-white border border-gray-200 rounded-md"
+                    wire:model="start_date"
+                />
+            </div>
+
+            <!-- End Date Filter -->
+            <div class="flex items-center space-x-2">
+                @php $id = CStr::id('filter_field') @endphp
+
+                <label for="{{ $id }}" class="text-sm font-medium">End</label>
+
+                <input
+                    type="date"
+                    id="{{ $id }}"
+                    class="h-10 text-sm bg-white border border-gray-200 rounded-md"
+                    wire:model="end_date"
+                />
+            </div>
+
+            <!-- Submit button -->
+            <div class="flex-1"></div>
+            <button
+                type="submit"
+                class="inline-block h-10 px-6 ml-auto text-white transition-colors bg-blue-500 rounded-md hover:bg-blue-600"
+                wire:loading.class="cursor-wait pointer-events-none opacity-60"
+                wire:loading.attr="disabled"
+                wire:click="filterTransactions"
+                wire:target="filterTransactions"
+            >
+                <span wire:target="filterTransactions" wire:loading.remove>Apply</span>
+                <span wire:target="filterTransactions" wire:loading>Filtering</span>
+            </button>
+        </div>
+
+        @php
+            function calculateQuantity(int $value, ?int $decimals = 0): float {
+                if (!$value || !$decimals) return 0;
+
+                return round($value / (pow(10, $decimals)), 3);
+            }
+
+            $gweiToEth = fn (int $gwei): float => $gwei / 1000000000;
+        @endphp
+
+        <x-flowbite.table.component :columns="['Item', 'In/Out', 'Quantity', 'From', 'To', 'Txn Fee', 'Time']">
+            @if ($transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty())
+                {{-- `$transactions` is a non-empty collection, we can iterate over it --}}
+                @foreach ($transactions->sortBy('block_number') as $transaction)
+                    @php
+                        $transaction->quantity = calculateQuantity(
+                            $transaction->value,
+                            $transaction->token['decimals']
+                        );
+
+                        $transaction->fee = round($gweiToEth($transaction->gas['price']), 3);
+                    @endphp
+                    <x-flowbite.table.row>
+                        <!-- Asset Name -->
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                            {{ $transaction->token['name'] }}
+                        </th>
+
+                        <!-- Direction -->
+                        <td class="px-6 py-4 {{ $transaction->direction == 'OUT' ? 'text-red-600' : 'text-green-600' }}">
+                            @if ($transaction->direction == 'OUT')
+                                <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                            @else
+                                <i class="fas fa-arrow-down" aria-hidden="true"></i>
+                            @endif
+                            {{ $transaction->direction }}
+                        </td>
+
+                        <!-- Quantity -->
+                        <td class="px-6 py-4">{{ $transaction->quantity }}</td>
+
+                        <!-- From -->
+                        <td class="px-6 py-4">
+                            @php
+                                $__id = CStr::id('recepient_address');
+                                $__address = $transaction->accounts['from'];
+                            @endphp
+                            <x-flowbite.tooltip id="{{ $__id }}">{{ $__address }}</x-flowbite.tooltip>
+                            <div data-tooltip-target="{{ $__id }}">
+                                {{ substr($__address, 0, 4) }}...{{ substr($__address, strlen($__address) - 4, strlen($__address) - 1) }}
+                            </div>
+                        </td>
+
+                        <!-- To -->
+                        <td class="px-6 py-4">
+                            @php
+                                $__id = CStr::id('recepient_address');
+                                $__address = $transaction->accounts['to'];
+                            @endphp
+                            <x-flowbite.tooltip id="{{ $__id }}">{{ $__address }}</x-flowbite.tooltip>
+                            <div data-tooltip-target="{{ $__id }}">
+                                {{ substr($__address, 0, 4) }}...{{ substr($__address, strlen($__address) - 4, strlen($__address) - 1) }}
+                            </div>
+                        </td>
+
+                        <!-- Txn Fee -->
+                        <td class="px-6 py-4">{{ $transaction->fee }}</td>
+
+                        <!-- Timestamp -->
+                        <td class="px-6 py-4">
+                            @php
+                                $__id = CStr::id('transaction_address');
+                                $__timestamp = new \Illuminate\Support\Carbon($transaction->block_timestamp);
+                            @endphp
+                            <x-flowbite.tooltip id="{{ $__id }}">
+                                {{ $__timestamp->format('D jS M Y \a\t g:i:s A') }}
+                            </x-flowbite.tooltip>
+
+                            <div data-tooltip-target="{{ $__id }}">
+                                {{ $__timestamp->format('d-m-Y h:i:s A') }}
+                            </div>
+                        </td>
+                    </x-flowbite.table.row>
+                @endforeach
+
+            @else
+                <!-- No transaction records available :( -->
                 <x-flowbite.table.row>
-                    <td class="text-center">{{ $transaction->id }}</td>
-
-                    <!-- Asset Name -->
-                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                        {{ $transaction->token['name'] }}
+                    <th colspan="8" class="py-3 font-semibold text-center text-gray-500">
+                        No transactions were found
                     </th>
-
-                    <!-- Direction -->
-                    @php $__outwards = strtolower($transaction->accounts['from']) == strtolower($wallet) @endphp
-                    <td class="px-6 py-4 {{ $__outwards ? 'text-red-600' : 'text-green-600' }}">
-                        @if ($__outwards)
-                            <i class="fas fa-arrow-up" aria-hidden="true"></i>
-                        @else
-                            <i class="fas fa-arrow-down" aria-hidden="true"></i>
-                        @endif
-                        {{ $__outwards ? 'OUT' : 'IN' }}
-                    </td>
-
-                    <!-- Quantity -->
-                    <td class="px-6 py-4">{{ $transaction->quantity }}</td>
-
-                    <!-- From -->
-                    <td class="px-6 py-4">
-                        @php
-                            $__id = CStr::id('recepient_address');
-                            $__address = $transaction->accounts['from'];
-                        @endphp
-                        <x-flowbite.tooltip id="{{ $__id }}">{{ $__address }}</x-flowbite.tooltip>
-                        <div data-tooltip-target="{{ $__id }}">
-                            {{ substr($__address, 0, 4) }}...{{ substr($__address, strlen($__address) - 4, strlen($__address) - 1) }}
-                        </div>
-                    </td>
-
-                    <!-- To -->
-                    <td class="px-6 py-4">
-                        @php
-                            $__id = CStr::id('recepient_address');
-                            $__address = $transaction->accounts['to'];
-                        @endphp
-                        <x-flowbite.tooltip id="{{ $__id }}">{{ $__address }}</x-flowbite.tooltip>
-                        <div data-tooltip-target="{{ $__id }}">
-                            {{ substr($__address, 0, 4) }}...{{ substr($__address, strlen($__address) - 4, strlen($__address) - 1) }}
-                        </div>
-                    </td>
-
-                    <!-- Txn Fee -->
-                    <td class="px-6 py-4">{{ $transaction->fee }}</td>
-
-                    <!-- Timestamp -->
-                    <td class="px-6 py-4">
-                        @php
-                            $__id = CStr::id('transaction_address');
-                            $__timestamp = new \Illuminate\Support\Carbon($transaction->block_timestamp);
-                        @endphp
-                        <x-flowbite.tooltip id="{{ $__id }}">
-                            {{ $__timestamp->format('D jS M Y \a\t g:i:s A') }}
-                        </x-flowbite.tooltip>
-
-                        <div data-tooltip-target="{{ $__id }}">
-                            {{ $__timestamp->format('d-m-Y h:i:s A') }}
-                        </div>
-                    </td>
                 </x-flowbite.table.row>
-            @endforeach
-
-        @else
-            <!-- No transaction records available :( -->
-            <x-flowbite.table.row>
-                <th colspan="8" class="py-3 font-semibold text-center text-gray-500">
-                    No transactions were found
-                </th>
-            </x-flowbite.table.row>
-        @endif
-    </x-flowbite.table.component>
+            @endif
+        </x-flowbite.table.component>
+    </div>
 
     @if ($transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty() && $transactions->count() >= config('hawk.etherscan.blocks.per_page'))
         <button

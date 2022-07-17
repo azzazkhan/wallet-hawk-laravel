@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('hash');
 
             $table->string('wallet');
+            $table->enum('direction', ['IN', 'OUT']);
 
             $table->json('accounts'); // Recipients information
             $table->json('gas'); // Pricing details

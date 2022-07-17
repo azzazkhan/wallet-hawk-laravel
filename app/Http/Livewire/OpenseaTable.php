@@ -54,6 +54,13 @@ class OpenseaTable extends Component
     public ?string $cursor = null;
 
     /**
+     * Opensea asset direction.
+     *
+     * @var ?string
+     */
+    public ?string $direction = null;
+
+    /**
      * Records are filtered or not.
      *
      * @var bool
@@ -302,9 +309,12 @@ class OpenseaTable extends Component
 
     private function getFilters(): array
     {
+        $start_date = $this->start_date ? (int) (new Carbon($this->start_date))->format('U') : null;
+        $end_date = $this->end_date ? (int) (new Carbon($this->start_date))->format('U') : null;
+
         return [
-            'start_date' => $this->start_date ? (int) (new Carbon($this->start_date))->format('U') : null,
-            'end_date'   => $this->start_date ? (int) (new Carbon($this->end_date))->format('U') : null,
+            'start_date' => $start_date || $end_date ? max($start_date, $end_date) : null,
+            'end_date'   => $start_date || $end_date ? min($start_date, $end_date) : null,
             'event_type' => $this->event_type && in_array($this->event_type, config('hawk.opensea.event.types'))
                 ? $this->event_type
                 : null

@@ -24,6 +24,7 @@ class Etherscan extends Model
     protected $fillable = [
         'block_timestamp',
         'block_number',
+        'direction',
         'hash',
         'wallet',
         'accounts',
