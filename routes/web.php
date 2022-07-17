@@ -18,4 +18,5 @@ Route::view('/faqs', 'faqs')->name('faqs');
 Route::post('/subscribe', 'SubscriptionsController@subscribe')->name('subscribe');
 
 Route::get('/transactions', 'TransactionsController@index')->name('transactions');
-Route::get('/transactions/{event_id}', 'TransactionsController@index')->name('transactions.single');
+Route::get('/transactions/{wallet}/{event_id}', 'TransactionsController@details')->name('transactions.single');
+Route::view('/details', 'transactions.details');

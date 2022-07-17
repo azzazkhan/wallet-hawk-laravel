@@ -186,22 +186,49 @@
                         $image            = $event['media']['image'];
                         $event->thumbnail = ($image['thumbnail'] ?: $image['url']) ?: $image['original'];
                         $event->name      = $event->asset['name'];
-                        $event->direction = $event->accounts['to'] == $__wallet || $event->accounts['winner'] == $__wallet
-                            ? 'IN' : 'OUT';
-                        $event->from      = $event->accounts['from'] ?: $event->accounts['seller'];
-                        $event->to        = $event->accounts['to'] ?: $event->accounts['winner'];
-                        $event->value     = '0 ETH, 0 USD';
                         $event->timestamp = new \Illuminate\Support\Carbon($event->event_timestamp);
 
+
+
+                        // Event direction and seller computation
+                        if (is_array($event->accounts['from'])) {
+                            $event->direction = $event->accounts['from']['address'] == strtolower($__wallet) ? 'OUT' : 'IN';
+                            $event->from = $event->accounts['from']['address'];
+                        }
+                        elseif (is_array($event->accounts['seller'])) {
+                            $event->direction = $event->accounts['seller']['address'] == strtolower($__wallet) ? 'OUT' : 'IN';
+                            $event->from = $event->accounts['seller']['address'];
+                        }
+                        else {
+                            $event->direction = 'OUT';
+                            $event->from = null;
+                        }
+
+
+                        // Event winner/to computation
+                        if (is_array($event->accounts['to']))
+                            $event->to = $event->accounts['to']['address'];
+                        elseif (is_array($event->accounts['winner']))
+                            $event->to = $event->accounts['winner']['address'];
+                        else $event->to = null;
+
+
+                        // Even asset value calculations
                         if ($event->payment_token && is_array($event->payment_token))
                             $event->value = sprintf(
                                 '%s ETH, %s USD',
-                                substr($event->payment_token['eth'], 0, 6),
-                                substr($event->payment_token['usd'], 0, 6)
+                                number_format((int) $event->payment_token['eth'], 0, 6),
+                                number_format((int) $event->payment_token['usd'], 0, 6)
                             );
+                        else $event->value = '0 ETH, 0 USD';
                     @endphp
                     <x-flowbite.table.row
-                        action="{{ route('transactions.single', $event->event_id) }}"
+                        action="{{
+                            route('transactions.single', [
+                                'wallet' => $wallet,
+                                'event_id' => $event->event_id
+                            ])
+                        }}"
                     >
                         <!-- Asset Name -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">

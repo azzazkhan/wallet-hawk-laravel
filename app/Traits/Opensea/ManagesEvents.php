@@ -53,7 +53,7 @@ trait ManagesEvents
             'event_id'        => $event['id'],
             'event_timestamp' => (int) (new Carbon($event['event_timestamp']))->format('U'),
 
-            'wallet' => $wallet,
+            'wallet' => strtolower($wallet),
 
             'media' => [
                 'image' => [
@@ -85,10 +85,10 @@ trait ManagesEvents
                 'date'    => (new Carbon($contract['created_date']))->format('Y-m-d H:i:s'),
             ],
             'accounts' => [
-                'from'   => $event['from_account'] ? ($event['from_account']['address'] ?: null) : null,
-                'to'     => $event['to_account'] ? ($event['to_account']['address'] ?: null) : null,
-                'seller' => $event['seller'] ? ($event['seller']['address'] ?: null) : null,
-                'winner' => $event['winner_account'] ? ($event['winner_account']['address'] ?: null) : null,
+                'from'   => $event['from_account'] ? ($event['from_account'] ?: null) : null,
+                'to'     => $event['to_account'] ? ($event['to_account'] ?: null) : null,
+                'seller' => $event['seller'] ? ($event['seller'] ?: null) : null,
+                'winner' => $event['winner_account'] ? ($event['winner_account'] ?: null) : null,
             ],
         ];
     }
