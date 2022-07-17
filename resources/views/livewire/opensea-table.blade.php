@@ -11,9 +11,9 @@
         </div>
     @endif
 
-    <div class="flex flex-col mt-10 space-y-4 select-none">
+    <div class="relative flex flex-col mt-10 space-y-4 select-none">
         <!-- Desktop filters -->
-        <div class="items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow md:flex">
+        <div class="sticky top-0 items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow md:flex">
             <!-- Asset token type selection -->
             <div class="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
                 <a href="#" class="flex items-center px-3 text-sm text-gray-500 bg-gray-200 cursor-not-allowed pointer-events-none">ERC1155/ERC721</a>
@@ -24,7 +24,7 @@
             <div class="flex items-center space-x-2">
                 @php $id = CStr::id('filter_field') @endphp
 
-                <label for="{{ $id }}" class="text-sm font-medium">Type</label>
+                <label for="{{ $id }}" class="text-sm font-medium">Event</label>
 
                 <select
                     name="event_type"
@@ -34,7 +34,7 @@
                 >
                     <option value="all">All</option>
                     <option value="created">Created</option>
-                    <option value="successful">Successful</option>
+                    <option value="successful">Sale</option>
                     <option value="cancelled">Cancelled</option>
                     <option value="bid_entered">Bid Entered</option>
                     <option value="bid_withdrawn">Bid Withdrawn</option>
@@ -102,6 +102,12 @@
         <!-- Mobile filters modal -->
         <x-flowbite.modal.popup id="{{ $__modal_id }}">
             <div class="flex flex-col space-y-4">
+                <!-- Asset token type selection -->
+                <div class="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md max-w-max">
+                    <a href="#" class="flex items-center px-3 text-sm text-gray-500 bg-gray-200 cursor-not-allowed pointer-events-none">ERC1155/ERC721</a>
+                    <a href="{{ route('transactions', ['schema' => 'erc20', 'wallet' => request()->query('wallet')]) }}" class="flex items-center px-3 text-sm transition-colors hover:bg-blue-600 hover:text-white">ERC20</a>
+                </div>
+
                 <!-- Event type filter -->
                 <div class="flex flex-col space-y-1">
                     @php $id = CStr::id('filter_field') @endphp
@@ -116,7 +122,7 @@
                     >
                         <option value="all">All</option>
                         <option value="created">Created</option>
-                        <option value="successful">Successful</option>
+                        <option value="successful">Sale</option>
                         <option value="cancelled">Cancelled</option>
                         <option value="bid_entered">Bid Entered</option>
                         <option value="bid_withdrawn">Bid Withdrawn</option>
@@ -177,7 +183,12 @@
             </div>
         </x-flowbite.modal.popup>
 
-        <x-flowbite.table.component :columns="['Item', 'In/Out', 'From', 'To', 'Type', 'Event Type', 'Value', 'Time']" editable>
+        <x-flowbite.table.component
+            :columns="['Item', 'In/Out', 'From', 'To', 'Type', 'Event Type', 'Value', 'Time']"
+            class="overflow-y-auto"
+            style="height: 40px;"
+            editable
+        >
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
                 {{-- `$events` is a non-empty collection, we can iterate over it --}}
                 @foreach ($events->sortByDesc('event_timestamp') as $event)
@@ -287,7 +298,7 @@
 
                         <!-- Event Type -->
                         <td class="px-6 py-4">
-                            {{ $event->event_type }}
+                            {{ ucfirst(preg_replace('/(successful)/', 'sale', strtolower($event->event_type))) }}
                         </td>
 
                         <!-- Asset Value -->
