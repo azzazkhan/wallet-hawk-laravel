@@ -13,7 +13,7 @@
 
     <div class="relative flex flex-col mt-10 space-y-4 select-none">
         <!-- Desktop filters -->
-        <div class="sticky top-0 items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow md:flex">
+        <div class="sticky z-50 items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow top-4 md:flex">
             <!-- Asset token type selection -->
             <div class="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
                 <a href="#" class="flex items-center px-3 text-sm text-gray-500 bg-gray-200 cursor-not-allowed pointer-events-none">ERC1155/ERC721</a>

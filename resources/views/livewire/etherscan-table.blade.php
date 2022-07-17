@@ -2,7 +2,7 @@
 <div>
     <div class="flex flex-col mt-10 space-y-4 select-none">
         <!-- Desktop filters -->
-        <div class="items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow md:flex">
+        <div class="sticky z-50 items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow top-4 md:flex">
             <!-- Asset token type selection -->
             <div class="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
                 <a href="{{ route('transactions', ['wallet' => request()->query('wallet')]) }}" class="flex items-center px-3 text-sm transition-colors hover:bg-blue-600 hover:text-white">ERC1155/ERC721</a>
