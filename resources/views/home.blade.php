@@ -6,13 +6,13 @@
                 Enter an Ethereum address below to look at transaction history in a human readable format.
             </p>
             <x-forms.search class="pt-4 shadow-2xl lg:pt-0" />
-            <img
-                src="{{ asset('assets/img/hawk.png') }}"
-                class="mx-auto w-auto h-[250px]"
-                alt="Hawk Image"
-            />
         </div>
     </x-layout.page>
+    <img
+        src="{{ asset('assets/img/hawk-artwork.png') }}"
+        class="w-full mx-auto"
+        alt="Hawk Image"
+    />
     <x-slot name="styles">
         <link rel="stylesheet" href="{{ asset('dist/css/notus.min.css') }}" />
     </x-slot>

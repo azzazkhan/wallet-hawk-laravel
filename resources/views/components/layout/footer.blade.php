@@ -1,5 +1,5 @@
 @php $__donate_modal_id = CStr::id('donate_modal') @endphp
-<footer class="flex items-center justify-between px-5 mt-auto bg-white drop-shadow-2xl md:px-28 sm:px-12 h-28">
+<footer class="flex items-center justify-between p-5 mt-auto space-x-5 bg-white drop-shadow-2xl md:px-28 sm:px-12 h-28">
     <form action="{{ route('subscribe') }}" method="POST" class="md:min-w-[300px]">
         @csrf
         <label htmlFor="newsletterEmailInput" class="text-xs font-medium">
@@ -19,6 +19,7 @@
     </form>
 
     <div class="block">
+        <span class="text-xs text-white">.</span>
         <button
             type="button"
             data-modal-toggle="{{ $__donate_modal_id }}"
