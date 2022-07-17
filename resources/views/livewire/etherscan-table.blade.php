@@ -254,6 +254,19 @@
                 </x-flowbite.table.row>
             @endif
         </x-flowbite.table.component>
+
+
+        @if ($transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty())
+            <div class="flex items-center justify-end">
+                @php $__ids = $transactions->map(fn ($transaction) => $transaction->id)->join(','); @endphp
+                <a
+                    href="{{ route('transactions.download.etherscan') }}?ids={{ $__ids }}"
+                    class="px-3 py-1.5 rounded hover:bg-gray-300 transition-colors font-medium text-sm"
+                >
+                    Downloads CSV
+                </a>
+            </div>
+        @endif
     </div>
 
     @if ($transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty() && $transactions->count() >= config('hawk.etherscan.blocks.per_page'))
