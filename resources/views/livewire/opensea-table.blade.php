@@ -189,7 +189,14 @@
             style="height: 40px;"
             editable
         >
+            <div
+                class="absolute top-0 bottom-0 left-0 right-0 z-20 bg-white bg-opacity-40 backdrop-blur-lg"
+                wire:loading
+            >
+                <div class="absolute text-4xl font-medium transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">Loading...</div>
+            </div>
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
+                {{-- @dd($events->map(fn ($event) => $event?->payment_token)->toArray()) --}}
                 {{-- `$events` is a non-empty collection, we can iterate over it --}}
                 @foreach ($events->sortByDesc('event_timestamp') as $event)
                     @php
@@ -228,10 +235,10 @@
                         if ($event->payment_token && is_array($event->payment_token))
                             $event->value = sprintf(
                                 '%s ETH, %s USD',
-                                number_format((int) $event->payment_token['eth'], 0, 6),
-                                number_format((int) $event->payment_token['usd'], 0, 6)
+                                number_format((int) $event->payment_token['eth'], 4),
+                                number_format(round((int) $event->payment_token['usd']), 0)
                             );
-                        else $event->value = '0 ETH, 0 USD';
+                        else $event->value = null;
                     @endphp
                     <x-flowbite.table.row
                         action="{{
@@ -303,7 +310,11 @@
 
                         <!-- Asset Value -->
                         <td class="px-6 py-4">
-                            {{ $event->value }}
+                            @if (is_string($event->value) && strlen($event->value) > 0)
+                                {{ $event->value }}
+                            @else
+                                <div class="font-bold text-center">--</div>
+                            @endif
                         </td>
 
                         <!-- Timestamp -->

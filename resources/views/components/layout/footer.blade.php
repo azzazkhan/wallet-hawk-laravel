@@ -37,7 +37,7 @@
             alt="ETH wallet QR Code"
         />
         <p class="px-6 text-gray-700">
-            If you're able, please donate to us! Anything helps to maintain operating costs (i.e. API integrations). This is our ETH wallet address.
+            If you're able, please donate to us! Anything helps to maintain operating costs (i.e. API integrations). This is Wallet Hawk ETH wallet address.
         </p>
     </div>
 </x-flowbite.modal.popup>

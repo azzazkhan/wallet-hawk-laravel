@@ -16,7 +16,16 @@
                 $__url = CStr::isValidString($crypto["url"]) ? $crypto["url"] : "#";
                 $__tooltip_id = CStr::id('tooltip');
             @endphp
-            <a
+
+            @if ($__available)
+                <a
+                    href="{{ $__url }}"
+                    class="inline-flex items-center h-8 text-sm text-white bg-blue-500 px-7"
+                >
+                    {{ $crypto['name'] }}
+                </a>
+            @endif
+            {{-- <a
                 class="inline-flex items-center h-8 text-sm text-white px-7 {{ $__available ? "bg-blue-500" : "bg-blue-400" }}"
                 href="{{ $__url }}"
                 @unless ($__available) data-tooltip-target="{{ $__tooltip_id }}" @endunless
@@ -25,8 +34,8 @@
                 {{ $crypto['name'] }}
             </a>
             @unless($__available)
-                <x-flowbite.tooltip id="{{ $__tooltip_id }}">Comming Soon</x-flowbite.tooltip>
-            @endunless
+                <x-flowbite.tooltip id="{{ $__tooltip_id }}">Coming Soon</x-flowbite.tooltip>
+            @endunless --}}
         @endforeach
     </div>
 

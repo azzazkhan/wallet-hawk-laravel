@@ -171,6 +171,13 @@
         @endphp
 
         <x-flowbite.table.component :columns="['Item', 'In/Out', 'Quantity', 'From', 'To', 'Txn Fee', 'Time']">
+            <div
+                class="absolute top-0 bottom-0 left-0 right-0 z-20 bg-white bg-opacity-40 backdrop-blur-lg"
+                wire:loading
+            >
+                <div class="absolute text-4xl font-medium transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">Loading...</div>
+            </div>
+
             @if ($transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty())
                 {{-- `$transactions` is a non-empty collection, we can iterate over it --}}
                 @foreach ($transactions->sortBy('block_number') as $transaction)
