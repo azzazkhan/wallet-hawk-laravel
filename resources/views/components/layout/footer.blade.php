@@ -32,7 +32,7 @@
 <x-flowbite.modal.popup id="{{ $__donate_modal_id }}">
     <div class="flex flex-col py-6 space-y-10">
         <img
-            src="{{ asset('assets/img/donation-wallet-qr-code.png') }}"
+            src="{{ asset('assets/img/wallet-hawk-qr-code.png') }}"
             class="w-48 h-48 mx-auto"
             alt="ETH wallet QR Code"
         />
