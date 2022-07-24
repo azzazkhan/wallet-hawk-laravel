@@ -343,6 +343,18 @@
                 </x-flowbite.table.row>
             @endif
         </x-flowbite.table.component>
+
+        @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
+            <div class="flex items-center justify-end">
+                @php $__ids = $events->map(fn ($event) => $event->id)->join(','); @endphp
+                <a
+                    href="{{ route('transactions.download.opensea') }}?ids={{ $__ids }}"
+                    class="px-3 py-1.5 rounded hover:bg-gray-300 transition-colors font-medium text-sm"
+                >
+                    Downloads CSV
+                </a>
+            </div>
+        @endif
     </div>
 
     @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty() && $events->count() >= config('hawk.opensea.event.per_page'))
