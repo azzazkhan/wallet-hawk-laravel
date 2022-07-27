@@ -21,6 +21,7 @@ return new class extends Migration
             $table->unsignedBigInteger('event_id');
             $table->enum('event_type', config('hawk.opensea.event.types'));
             $table->unsignedInteger('event_timestamp');
+            $table->string('value')->nullable();
 
             // [images => [url, original, preview, thumbnail], animation => [url, original]]
             $table->json('media')->nullable();

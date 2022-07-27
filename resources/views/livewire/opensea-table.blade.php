@@ -1,4 +1,9 @@
-@php $__modal_id = CStr::id('filter_modal') @endphp
+@php
+    $__modal_id = CStr::id('filter_modal');
+    function gweiToEth(int $gwei): float {
+        return $gwei / 1000000000000000000;
+    }
+@endphp
 <div>
     @if ($error && strlen($error) > 0)
         <div class="fixed z-50 flex items-center py-3 text-sm font-medium text-center text-white transform -translate-x-1/2 translate-y-2 bg-red-600 rounded-md bottom-10 left-1/2 px-7">
@@ -196,7 +201,6 @@
                 <div class="absolute text-4xl font-medium transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">Loading...</div>
             </div>
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
-                {{-- @dd($events->map(fn ($event) => $event?->payment_token)->toArray()) --}}
                 {{-- `$events` is a non-empty collection, we can iterate over it --}}
                 @foreach ($events->sortByDesc('event_timestamp') as $event)
                     @php
@@ -205,8 +209,6 @@
                         $event->thumbnail = ($image['thumbnail'] ?: $image['url']) ?: $image['original'];
                         $event->name      = $event->asset['name'];
                         $event->timestamp = new \Illuminate\Support\Carbon($event->event_timestamp);
-
-
 
                         // Event direction and seller computation
                         if (is_array($event->accounts['from'])) {
@@ -232,13 +234,17 @@
 
 
                         // Even asset value calculations
-                        if ($event->payment_token && is_array($event->payment_token))
-                            $event->value = sprintf(
-                                '%s ETH, %s USD',
-                                number_format((int) $event->payment_token['eth'], 4),
-                                number_format(round((int) $event->payment_token['usd']), 0)
-                            );
-                        else $event->value = null;
+                        // if ($event->payment_token && is_array($event->payment_token))
+                        //     $event->value = sprintf(
+                        //         '%s ETH, %s USD',
+                        //         ,
+                        //         number_format(round((int) $event->payment_token['usd']), 0)
+                        //     );
+                        // else $event->value = null;
+
+                        $event->value = $event->value
+                            ? sprintf('%s ETH', number_format(gweiToEth((int) $event->value), 4))
+                            : null;
                     @endphp
                     <x-flowbite.table.row
                         action="{{

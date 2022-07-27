@@ -54,6 +54,7 @@ trait ManagesEvents
             'event_timestamp' => (int) (new Carbon($event['event_timestamp']))->format('U'),
 
             'wallet' => strtolower($wallet),
+            'value' => $event['total_price'],
 
             'media' => [
                 'image' => [
@@ -73,6 +74,7 @@ trait ManagesEvents
                 'description'   => $asset['description'] ?: null,
                 'external_link' => $asset['external_link'] ?: null,
             ],
+
             'payment_token' => $payment_token ? [
                 'decimals' => (int) $payment_token['decimals'],
                 'symbol'   => $payment_token['symbol'],

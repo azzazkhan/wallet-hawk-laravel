@@ -6,6 +6,10 @@
     $from     = $event->accounts['from'];
     $seller   = $event->accounts['seller'];
     $winner   = $event->accounts['winner'];
+
+    function gweiToEth(int $gwei): float {
+        return $gwei / 1000000000000000000;
+    }
 @endphp
 
 <x-app>
@@ -33,20 +37,13 @@
                         </x-custom.pills.wrapper>
 
                         <x-custom.pills.wrapper noPush>
-                            @if ($event->payment_token)
+                            @if ($event->value)
                                 <x-custom.pills.item
                                     tooltip="NFT Price"
                                     style="color: white; background-color: black;"
                                     icon="fab fa-ethereum"
                                 >
-                                    {{ number_format($event->payment_token['eth'], 4) }}
-                                </x-custom.pills.item>
-                                <x-custom.pills.item
-                                    tooltip="Current ETH Price"
-                                    style="color: white; background-color: #22c55e;"
-                                    icon="fas fa-dollar-sign"
-                                >
-                                    {{ number_format($event->payment_token['usd'], 2) }}
+                                    {{ number_format(gweiToEth((int) $event->value), 4) }}
                                 </x-custom.pills.item>
                             @endif
                             <x-custom.pills.item

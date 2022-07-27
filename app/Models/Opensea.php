@@ -29,6 +29,7 @@ class Opensea extends Model
         'event_timestamp',
         'media',
         'asset',
+        'value',
         'payment_token',
         'contract',
         'accounts',
