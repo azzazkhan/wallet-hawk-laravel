@@ -32,8 +32,8 @@ return new class extends Migration
             $table->unsignedBigInteger('value');
             $table->string('input');
 
-            $table->unique(['wallet', 'hash']);
-            $table->unique(['wallet', 'block_number']);
+            // $table->unique(['wallet', 'hash']);
+            // $table->unique(['wallet', 'block_number']);
 
             $table->timestamps();
         });
