@@ -12,6 +12,7 @@ return [
                 'transfer',
                 'offer_entered',
                 'approve',
+                'unknown', // If no value is present
             ],
             'schema'   => ['ERC721', 'ERC1155'],
             'per_page' => (int) env('OPENSEA_RECORDS_PER_PAGE', 20)

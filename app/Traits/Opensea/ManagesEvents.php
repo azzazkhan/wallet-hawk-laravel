@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 trait ManagesEvents
 {
@@ -43,56 +44,80 @@ trait ManagesEvents
      */
     private function parseEvent(string $wallet, array $event): array
     {
-        $asset = $event['asset'];
-        $contract = $event['asset']['asset_contract'];
-        $payment_token = $event['payment_token'];
+        // General event info (required for each event type)
+        $parsed = [
+            'event_id'   => $event['id'] ?? 0,
+            'event_type' => Str::lower($event['event_type'] ?? 'unknown'),
+            'wallet'     => Str::lower($event['wallet'] ?? 'unknown'),
+            'value'      => $event['total_price'] ?? 0,
 
-        return [
-            'schema'          => strtoupper($contract['schema_name']),
-            'event_type'      => strtolower($event['event_type']),
-            'event_id'        => $event['id'],
-            'event_timestamp' => (int) (new Carbon($event['event_timestamp']))->format('U'),
+            // Related accounts (no need of parsing)
+            'accounts' => [
+                'from'   => $event['from_account'] ?? null,
+                'to'     => $event['to_account'] ?? null,
+                'seller' => $event['seller'] ?? null,
+                'winner' => $event['winner_account'] ?? null,
+            ]
+        ];
 
-            'wallet' => strtolower($wallet),
-            'value' => $event['total_price'],
+        // Convert the event time (UTC string) to UNIX timestamp
+        $parsed['event_timestamp'] = optional($event['event_timestamp'], function ($timestamp) {
+            return (int) (new Carbon($timestamp))->format('U');
+        });
 
-            'media' => [
+        // Parse event asset if present (not in all events)
+        $parsed = array_merge($parsed, optional($event['asset'], function (array $asset) use ($parsed): array {
+            // Parse asset contract if present
+            $contract = optional($asset['asset_contract'], function (array $contract) use ($parsed): array {
+                $schema = Str::lower($contract['asset_schema'] ?? 'unknown');
+
+                // Parse event asset contract and prevent null value exceptions.
+                return array_merge(compact('schema'), [
+                    'contract' => [
+                        'address' => $contract['address'] ?? 'Unknown',
+                        'type'    => $contract['asset_contract_type'] ?? 'Unknown',
+                        'date'    => optional($contract['created_date'], function ($date): string {
+                            return (new Carbon($date))->format('Y-m-d H:i:s');
+                        }),
+                    ],
+                ]);
+            });
+
+            // Parse media (image and animation) with null error mitigation
+            $media = [
                 'image' => [
-                    'url'       => $asset['image_url'] ?: null,
-                    'original'  => $asset['image_original_url'] ?: null,
-                    'preview'   => $asset['image_preview_url'] ?: null,
-                    'thumbnail' => $asset['image_thumbnail_url'] ?: null,
+                    'url'       => $asset['image_url'] ?? null,
+                    'original'  => $asset['image_original_url'] ?? null,
+                    'preview'   => $asset['image_preview_url'] ?? null,
+                    'thumbnail' => $asset['image_thumbnail_url'] ?? null,
                 ],
                 'animation' => [
-                    'url'      => $asset['animation_url'] ?: null,
-                    'original' => $asset['animation_original_url'] ?: null,
+                    'url'      => $asset['animation_url'] ?? null,
+                    'original' => $asset['animation_original_url'] ?? null,
                 ],
-            ],
-            'asset' => [
-                'id'            => (int) $asset['id'],
-                'name'          => $asset['name'],
-                'description'   => $asset['description'] ?: null,
-                'external_link' => $asset['external_link'] ?: null,
-            ],
+            ];
 
-            'payment_token' => $payment_token ? [
-                'decimals' => (int) $payment_token['decimals'],
-                'symbol'   => $payment_token['symbol'],
-                'eth'      => (string) $payment_token['eth_price'],
-                'usd'      => (string) $payment_token['usd_price'],
-            ] : null,
-            'contract' => [
-                'address' => $contract['address'],
-                'type'    => $contract['asset_contract_type'],
-                'date'    => (new Carbon($contract['created_date']))->format('Y-m-d H:i:s'),
-            ],
-            'accounts' => [
-                'from'   => $event['from_account'] ? ($event['from_account'] ?: null) : null,
-                'to'     => $event['to_account'] ? ($event['to_account'] ?: null) : null,
-                'seller' => $event['seller'] ? ($event['seller'] ?: null) : null,
-                'winner' => $event['winner_account'] ? ($event['winner_account'] ?: null) : null,
-            ],
-        ];
+            // Merge asset related data with null value mitigation
+            return array_merge($contract, compact('media'), [
+                'asset' => [
+                    'id' => (int) ($asset['id'] ?? '0'),
+                    'name'          => $asset['name'] ?? 'Unknown',
+                    'description'   => $asset['description'] ?? 'No description',
+                    'external_link' => $asset['external_link'] ?? null,
+                ]
+            ]);
+        }));
+
+        $parsed['payment_token'] = optional($event['payment_token'], function ($token): array {
+            $decimals = is_numeric($token['decimals'] ?? null) ? (int) $token['decimals'] : 0;
+            $symbol   = Str::upper($token['symbol'] ?? 'unknown');
+            $eth      = $token['eth_price'] ?? null;
+            $usd      = $token['usd_price'] ?? null;
+
+            return compact('decimals', 'symbol', 'eth', 'usd');
+        });
+
+        return $parsed;
     }
 
     /**
