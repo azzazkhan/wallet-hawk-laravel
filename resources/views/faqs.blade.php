@@ -5,7 +5,7 @@
                 Being on the receiving end of fraud and embezzlement in crypto made this site possible. I worked with auditors to develop a tool that will help them track transactions of bad actors in this space.
             </x-flowbite.accordion.item>
             <x-flowbite.accordion.item label="Which chains are supported?">
-                At the moment, we support only Ethereum but we'll be adding more chains in the future.
+                At the moment, we support only Ethereum but we'll be adding more chains based on user feedback.
             </x-flowbite.accordion.item>
             <x-flowbite.accordion.item label="How can I get in touch with the team?">
                 You can reach us through a Twitter DM or in our discord server.

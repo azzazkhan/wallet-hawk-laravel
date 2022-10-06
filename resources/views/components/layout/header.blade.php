@@ -10,7 +10,7 @@
 
     <!-- Available crypto items -->
     <div class="items-center justify-end flex-1 hidden space-x-3 md:flex">
-        @foreach ($cryptos as $crypto)
+        {{-- @foreach ($cryptos as $crypto)
             @php
                 $__available = CStr::isValidBoolean($crypto["available"]) && $crypto["available"];
                 $__url = CStr::isValidString($crypto["url"]) ? $crypto["url"] : "#";
@@ -35,12 +35,19 @@
             </a>
             @unless($__available)
                 <x-flowbite.tooltip id="{{ $__tooltip_id }}">Coming Soon</x-flowbite.tooltip>
-            @endunless --}}
-        @endforeach
+            @endunless -}}
+        @endforeach --}}
     </div>
 
     <!-- Info links -->
-    <div class="flex items-center justify-end space-x-2">
-        <a href="{{ route('faqs') }}">FAQs</a>
+    <div class="flex items-center justify-end space-x-4">
+        <a href="{{ route('faqs') }}">FAQ</a>
+
+        <a
+            href="https://twitter.com/wallethawk"
+            class="flex items-center justify-center w-10 h-10 text-lg transition-colors transform rounded-lg hover:bg-gray-100 hover:text-blue-500"
+        >
+            <i class="fa-brands fa-twitter"></i>
+        </a>
     </div>
 </header>
