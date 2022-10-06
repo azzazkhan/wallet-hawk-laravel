@@ -3,6 +3,8 @@
     function gweiToEth(int $gwei): float {
         return $gwei / 1000000000000000000;
     }
+
+    $events = $events->map(fn ($event) => is_array($event) ? new App\Models\Opensea($event) : $event);
 @endphp
 <div>
     @if ($error && strlen($error) > 0)
@@ -200,15 +202,34 @@
             >
                 <div class="absolute text-4xl font-medium transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">Loading...</div>
             </div>
+
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
                 {{-- `$events` is a non-empty collection, we can iterate over it --}}
                 @foreach ($events->sortByDesc('event_timestamp') as $event)
                     @php
-                        $__wallet         = strtolower($wallet);
-                        $image            = $event['media']['image'];
-                        $event->thumbnail = ($image['thumbnail'] ?: $image['url']) ?: $image['original'];
-                        $event->name      = $event->asset['name'];
-                        $event->timestamp = new \Illuminate\Support\Carbon($event->event_timestamp);
+                        $__wallet       = Str::lower($wallet);
+
+                        $event->preview = optional($event->media, function (array $media): ?string {
+                            $preview = optional($media['animation'], function (array $animation): ?string {
+                                return $animation['url']
+                                        ?? $animation['original']
+                                        ?? null;
+                            });
+
+                            if (! $preview)
+                                $preview = optional($media['image'], function (array $image): ?string {
+                                    return $image['thumbnail']
+                                            ?? $image['url']
+                                            ?? $image['preview']
+                                            ?? $image['original']
+                                            ?? null;
+                                });
+
+                            return $preview;
+                        });
+
+                        $event->name      = $event->asset['name'] ?? 'Unknown';
+                        $event->timestamp = carbon($event->event_timestamp);
 
                         // Event direction and seller computation
                         if (is_array($event->accounts['from'])) {
@@ -233,15 +254,6 @@
                         else $event->to = null;
 
 
-                        // Even asset value calculations
-                        // if ($event->payment_token && is_array($event->payment_token))
-                        //     $event->value = sprintf(
-                        //         '%s ETH, %s USD',
-                        //         ,
-                        //         number_format(round((int) $event->payment_token['usd']), 0)
-                        //     );
-                        // else $event->value = null;
-
                         $event->value = $event->value
                             ? sprintf('%s ETH', number_format(gweiToEth((int) $event->value), 4))
                             : null;
@@ -257,7 +269,9 @@
                         <!-- Asset Name -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
                             <div class="flex items-center space-x-2">
-                                <img src="{{ $event->thumbnail }}" class="inline-block w-10 h-10 rounded" alt="{{ $event->name }}" />
+                                @if ($event->preview)
+                                    <img src="{{ $event->preview }}" class="inline-block w-10 h-10 rounded" alt="{{ $event->name }}" />
+                                @endif
                                 <span>{{ $event->name }}</span>
                             </div>
                         </th>
