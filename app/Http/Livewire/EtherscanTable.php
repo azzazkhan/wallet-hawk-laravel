@@ -410,11 +410,20 @@ class EtherscanTable extends Component
 
         // Check if any of passed transactions already exist in database or not
         $existing_transactions = Etherscan::where('wallet', $this->wallet)
-            ->whereIn(
+            ->where(
                 'hash',
+                'in',
                 $transactions
                     ->unique('hash')
                     ->map(fn ($transaction) => $transaction['hash'])
+                    ->toArray()
+            )
+            ->orWhere(
+                'block_number',
+                'in',
+                $transactions
+                    ->unique('block_number')
+                    ->map(fn ($transaction) => $transaction['block_number'])
                     ->toArray()
             )
             ->get();
