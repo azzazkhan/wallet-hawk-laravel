@@ -27,7 +27,7 @@ trait ManagesEvents
         return $this->saveEvents(
             $wallet,
             collect($events)->map(function ($event) use ($wallet) {
-                return $this->parseEvent($event);
+                return $this->parseEvent($wallet, $event);
             })
         );
     }
@@ -37,17 +37,18 @@ trait ManagesEvents
      * and converts them into formatted `\App\Models\Opensea` model
      * compatible schema array.
      *
+     * @param string $wallet
      * @param array<mixed> $event
      *
      * @return array<mixed>
      */
-    private function parseEvent(array $event): array
+    private function parseEvent(string $wallet, array $event): array
     {
         // General event info (required for each event type)
         $parsed = [
             'event_id'   => $event['id'] ?? 0,
             'event_type' => Str::lower($event['event_type'] ?? 'unknown'),
-            'wallet'     => Str::lower($event['wallet'] ?? 'unknown'),
+            'wallet'     => Str::lower($wallet),
             'value'      => $event['total_price'] ?? 0,
 
             // Related accounts (no need of parsing)
@@ -68,7 +69,7 @@ trait ManagesEvents
         $parsed = array_merge($parsed, optional($event['asset'], function (array $asset) use ($parsed): array {
             // Parse asset contract if present
             $contract = optional($asset['asset_contract'], function (array $contract) use ($parsed): array {
-                $schema = Str::lower($contract['asset_schema'] ?? 'unknown');
+                $schema = Str::lower($contract['schema_name'] ?? 'unknown');
 
                 // Parse event asset contract and prevent null value exceptions.
                 return array_merge(compact('schema'), [

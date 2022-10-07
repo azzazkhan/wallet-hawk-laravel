@@ -31,7 +31,7 @@ return new class extends Migration
             $table->json('contract')->nullable(); // [address, type, date]
             $table->json('accounts'); // [from, to, winner, seller]
 
-            // $table->unique(['wallet', 'event_id']);
+            $table->unique(['wallet', 'event_id']);
 
             $table->timestamps();
         });
