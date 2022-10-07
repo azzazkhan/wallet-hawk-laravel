@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('input');
 
             // $table->unique(['wallet', 'hash']);
-            // $table->unique(['wallet', 'block_number']);
+            $table->unique(['wallet', 'block_number']);
 
             $table->timestamps();
         });

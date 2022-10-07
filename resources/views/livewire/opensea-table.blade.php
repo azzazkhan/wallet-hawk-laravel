@@ -210,22 +210,12 @@
                         $__wallet       = Str::lower($wallet);
 
                         $event->preview = optional($event->media, function (array $media): ?string {
-                            $preview = optional($media['animation'], function (array $animation): ?string {
-                                return $animation['url']
-                                        ?? $animation['original']
+                            return optional($media['image'], function (array $image): ?string {
+                                return $image['thumbnail']
+                                        ?? $image['url']
+                                        ?? $image['original']
                                         ?? null;
                             });
-
-                            if (! $preview)
-                                $preview = optional($media['image'], function (array $image): ?string {
-                                    return $image['thumbnail']
-                                            ?? $image['url']
-                                            ?? $image['preview']
-                                            ?? $image['original']
-                                            ?? null;
-                                });
-
-                            return $preview;
                         });
 
                         $event->name      = $event->asset['name'] ?? 'Unknown';
@@ -325,7 +315,11 @@
 
                         <!-- Event Type -->
                         <td class="px-6 py-4">
-                            {{ ucfirst(preg_replace('/(successful)/', 'sale', strtolower($event->event_type))) }}
+                            @php
+                                $__event_type = preg_replace('/(successful)/', 'sale', $event->event_type);
+                                $__event_type = preg_replace('/(_|-)/', ' ', $__event_type);
+                            @endphp
+                            {{ Str::title($__event_type) }}
                         </td>
 
                         <!-- Asset Value -->
