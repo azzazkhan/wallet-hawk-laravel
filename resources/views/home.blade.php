@@ -13,7 +13,4 @@
             />
         </div>
     </x-layout.page>
-    <x-slot name="styles">
-        <link rel="stylesheet" href="{{ asset('dist/css/notus.min.css') }}" />
-    </x-slot>
 </x-app>

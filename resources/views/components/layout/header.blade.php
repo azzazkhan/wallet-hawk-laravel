@@ -40,7 +40,7 @@
     </div>
 
     <!-- Info links -->
-    <div class="flex items-center justify-end space-x-4">
+    <div class="flex items-center justify-end space-x-10">
         <a href="{{ route('faqs') }}">FAQ</a>
 
         <a

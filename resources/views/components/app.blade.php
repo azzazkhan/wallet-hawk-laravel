@@ -18,11 +18,14 @@
     <meta name="description" content="{{ config('app.description') }}" />
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" type="image/x-icon" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" />
-    <link rel="stylesheet" href="{{ mix('dist/css/tailwind.min.css') }}" />
-    <link rel="stylesheet" href="{{ mix('dist/css/style.min.css') }}" />
+
+    @vite(['resources/css/tailwind.css', 'resources/scss/app.scss'])
+
+    <!-- FontAwesome 6 CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/fontawesome.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/solid.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/brands.min.css" />
+
     @livewireStyles
     {{ $styles ?? null }}
 </head>
@@ -33,7 +36,6 @@
     </main>
     @if (isset($footer)) {{ $footer }} @elseif (!$noFooter) <x-layout.footer /> @endif
     <script src="https://unpkg.com/flowbite@1.4.7/dist/flowbite.js"></script>
-    <script src="{{ mix('dist/js/app.min.js') }}" defer></script>
     {{ $scripts ?? null }}
     @livewireScripts
 </body>
