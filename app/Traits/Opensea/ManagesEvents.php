@@ -27,7 +27,7 @@ trait ManagesEvents
         return $this->saveEvents(
             $wallet,
             collect($events)->map(function ($event) use ($wallet) {
-                return $this->parseEvent($wallet, $event);
+                return $this->parseEvent($event);
             })
         );
     }
@@ -37,12 +37,11 @@ trait ManagesEvents
      * and converts them into formatted `\App\Models\Opensea` model
      * compatible schema array.
      *
-     * @param string $wallet
      * @param array<mixed> $event
      *
      * @return array<mixed>
      */
-    private function parseEvent(string $wallet, array $event): array
+    private function parseEvent(array $event): array
     {
         // General event info (required for each event type)
         $parsed = [

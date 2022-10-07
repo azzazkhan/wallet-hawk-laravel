@@ -1,8 +1,0 @@
-{
-    "/dist/js/app.min.js": "/dist/js/app.min.js",
-    "/dist/js/manifest.js": "/dist/js/manifest.js",
-    "/dist/css/notus.min.css": "/dist/css/notus.min.css",
-    "/dist/css/tailwind.min.css": "/dist/css/tailwind.min.css",
-    "/dist/css/style.min.css": "/dist/css/style.min.css",
-    "/dist/js/vendor.js": "/dist/js/vendor.js"
-}
