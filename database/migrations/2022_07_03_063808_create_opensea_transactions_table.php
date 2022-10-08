@@ -17,8 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('wallet');
 
-            // $table->enum('schema', config('hawk.opensea.event.schema'));
-            $table->string('schema');
+            $table->enum('schema', config('hawk.opensea.event.schema'))->default('UNKNOWN');
             $table->unsignedBigInteger('event_id');
             $table->enum('event_type', config('hawk.opensea.event.types'));
             $table->unsignedInteger('event_timestamp');

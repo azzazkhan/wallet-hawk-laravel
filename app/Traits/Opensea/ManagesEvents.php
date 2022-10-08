@@ -66,10 +66,10 @@ trait ManagesEvents
         });
 
         // Parse event asset if present (not in all events)
-        $parsed = array_merge($parsed, optional($event['asset'], function (array $asset) use ($parsed): array {
+        $parsed = array_merge($parsed, optional($event['asset'], function (array $asset): array {
             // Parse asset contract if present
-            $contract = optional($asset['asset_contract'], function (array $contract) use ($parsed): array {
-                $schema = Str::lower($contract['schema_name'] ?? 'unknown');
+            $contract = optional($asset['asset_contract'], function (array $contract): array {
+                $schema = Str::upper($contract['schema_name'] ?? 'unknown');
 
                 // Parse event asset contract and prevent null value exceptions.
                 return array_merge(compact('schema'), [
@@ -100,13 +100,13 @@ trait ManagesEvents
             // Merge asset related data with null value mitigation
             return array_merge($contract, compact('media'), [
                 'asset' => [
-                    'id' => (int) ($asset['id'] ?? '0'),
+                    'id'            => (int) ($asset['id'] ?? '0'),
                     'name'          => $asset['name'] ?? 'Unknown',
                     'description'   => $asset['description'] ?? 'No description',
                     'external_link' => $asset['external_link'] ?? null,
                 ]
             ]);
-        }));
+        }) ?: []);
 
         $parsed['payment_token'] = optional($event['payment_token'], function ($token): array {
             $decimals = is_numeric($token['decimals'] ?? null) ? (int) $token['decimals'] : 0;

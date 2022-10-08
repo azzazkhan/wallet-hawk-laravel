@@ -14,7 +14,7 @@ return [
                 'approve',
                 'unknown', // If no value is present
             ],
-            'schema'   => ['ERC721', 'ERC1155'],
+            'schema'   => ['ERC721', 'ERC1155', 'UNKNOWN'],
             'per_page' => (int) env('OPENSEA_RECORDS_PER_PAGE', 20)
         ],
         'network' => [

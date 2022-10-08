@@ -205,7 +205,7 @@
 
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
                 {{-- `$events` is a non-empty collection, we can iterate over it --}}
-                @foreach ($events->sortByDesc('event_timestamp') as $event)
+                @foreach ($events->sortByDesc('event_timestamp')->unique('event_id') as $event)
                     @php
                         $__wallet       = Str::lower($wallet);
 
