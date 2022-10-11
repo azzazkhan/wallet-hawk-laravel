@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,3 +23,7 @@ Route::get('transactions/{wallet}/{event_id}', 'TransactionsController@details')
 
 Route::get('/downloads/erc20', 'CsvExportController@etherscan')->name('transactions.download.etherscan');
 Route::get('/downloads/erc721-erc1155', 'CsvExportController@opensea')->name('transactions.download.opensea');
+
+Route::get('opensea', function (Request $request) {
+    return view('opensea');
+});

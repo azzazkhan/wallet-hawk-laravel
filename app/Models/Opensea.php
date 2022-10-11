@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,7 +16,14 @@ class Opensea extends Model
      *
      * @var string
      */
-    protected $table = 'opensea_transactions';
+    protected $table = 'opensea_events';
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -23,16 +32,20 @@ class Opensea extends Model
      */
     protected $fillable = [
         'wallet',
-        'schema',
         'event_id',
         'event_type',
-        'event_timestamp',
-        'media',
-        'asset',
         'value',
-        'payment_token',
-        'contract',
         'accounts',
+        'contract_address',
+        'collection_slug',
+        'created_at',
+        'event_timestamp',
+        'payment_token',
+        'schema',
+        'contract',
+        'media',
+        'collection',
+        'asset',
     ];
 
     /**
@@ -41,15 +54,33 @@ class Opensea extends Model
      * @var array
      */
     protected $casts = [
-        'wallet'          => 'string',
-        'schema'          => 'string',
-        'event_id'        => 'integer',
-        'event_type'      => 'string',
-        'event_timestamp' => 'integer',
-        'media'           => 'array',
-        'asset'           => 'array',
-        'payment_token'   => 'array',
-        'contract'        => 'array',
-        'accounts'        => 'array',
+        'wallet'           => 'string',
+        'event_id'         => 'integer',
+        'event_type'       => 'string',
+        'value'            => 'integer',
+        'accounts'         => AsCollection::class,
+        'contract_address' => 'string',
+        'collection_slug'  => 'string',
+        'created_at'       => 'integer',
+        'payment_token'    => AsCollection::class,
+        'event_timestamp'  => 'integer',
+        'schema'           => 'string',
+        'contract'         => AsCollection::class,
+        'media'            => AsCollection::class,
+        'collection'       => AsCollection::class,
+        'asset'            => AsCollection::class,
     ];
+
+    /**
+     * Scope a query to only include events for a given wallet address.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $wallet
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForWallet(Builder $query, string $wallet): Builder
+    {
+        return $query->where('wallet', $wallet);
+    }
 }
