@@ -4,7 +4,10 @@
         return $gwei / 1000000000000000000;
     }
 
-    $events = $events->map(fn ($event) => is_array($event) ? new App\Models\Opensea($event) : $event);
+    $events = $events
+        ->map(fn ($event) => is_array($event) ? new App\Models\Opensea($event) : $event)
+        ->sortByDesc('event_timestamp')
+        ->unique('event_id');
 @endphp
 <div>
     @if ($error && strlen($error) > 0)
@@ -205,7 +208,7 @@
 
             @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
                 {{-- `$events` is a non-empty collection, we can iterate over it --}}
-                @foreach ($events->sortByDesc('event_timestamp')->unique('event_id') as $event)
+                @foreach ($events as $event)
                     @php
                         $__wallet       = Str::lower($wallet);
 
@@ -359,7 +362,11 @@
         </x-flowbite.table.component>
 
         @if ($events instanceof \Illuminate\Support\Collection && $events->isNotEmpty())
-            <div class="flex items-center justify-end">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-500">
+                    Showing {{ $events->count() }} transactions
+                </span>
+
                 @php $__ids = $events->map(fn ($event) => $event->id)->join(','); @endphp
                 <a
                     href="{{ route('transactions.download.opensea') }}?ids={{ $__ids }}"

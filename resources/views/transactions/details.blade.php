@@ -1,5 +1,13 @@
 @php
-    $background = $event->media['image']['original'];
+    $background = optional($event->media, function (array $media): ?string {
+        return optional($media['image'], function (array $image): ?string {
+            return $image['original']
+                    ?? $image['url']
+                    ?? $image['thumbnail']
+                    ?? null;
+        });
+    });
+
     $name       = $event->asset['name'];
 
     $to       = $event->accounts['to'];

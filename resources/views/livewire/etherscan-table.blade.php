@@ -264,7 +264,11 @@
 
 
         @if ($transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty())
-            <div class="flex items-center justify-end">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-500">
+                    Showing {{ $transactions->count() }} transactions
+                </span>
+
                 @php $__ids = $transactions->map(fn ($transaction) => $transaction->id)->join(','); @endphp
                 <a
                     href="{{ route('transactions.download.etherscan') }}?ids={{ $__ids }}"
