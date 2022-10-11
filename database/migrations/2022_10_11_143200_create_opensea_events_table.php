@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
 
             $table->string('wallet');
-            $table->unsignedInteger('event_id');
+            $table->unsignedBigInteger('event_id');
 
             $table->string('event_type')->default('unknown');
             $table->unsignedBigInteger('value')->default(0);

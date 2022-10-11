@@ -103,8 +103,6 @@ class OpenseaTransactionsView extends Component
         $events = collect($events)->map(fn ($event) => static::parse_raw_event($event));
         ['uniques' => $uniques, 'existing' => $existing] = static::save_events($this->wallet, $events);
 
-        Log::debug('type', $events->map(fn ($event) => $event['event_type'])->toArray());
-
         $this->events = $uniques->concat($existing);
         $this->cursor = $cursor ?: null;
         $this->filtered = true;

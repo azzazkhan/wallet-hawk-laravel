@@ -336,9 +336,16 @@
 
                             <td class="px-4 py-3">
                                 <span title="{{ $event_time }}">{{ $time_ago }}</span>
-                                {{-- {{ $data->get('timestamp')->format('D, d M Y H:i:s') }} --}}
                             </td>
-                            <td class="px-4 py-3"></td>
+
+                            <td class="px-4 py-3">
+                                <a
+                                    href="{{ route('transactions.single', ['wallet' => $wallet, 'event_id' => $event_id]) }}"
+                                    class="inline-flex items-center h-8 px-3 text-xs font-medium text-blue-500 transition-colors border border-blue-500 rounded-md whitespace-nowrap hover:text-white hover:bg-blue-500"
+                                >
+                                    Details
+                                </a>
+                            </td>
                         </tr>
                     @endforeach
                 @else

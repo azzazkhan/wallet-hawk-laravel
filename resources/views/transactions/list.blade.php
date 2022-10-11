@@ -5,7 +5,7 @@
         @if (request()->has('schema') && strtolower(request()->query('schema')) == 'erc20')
             <livewire:etherscan-table />
         @else
-            <livewire:opensea-table />
+            <livewire:opensea-transactions-view />
         @endif
 
     </x-layout.page>

@@ -28,6 +28,6 @@ class TransactionsController extends Controller
             ->where('event_id', $event_id)
             ->firstOrFail();
 
-        return view('transactions.details', compact('event'));
+        return view('transactions.details', compact('event', 'wallet'));
     }
 }
