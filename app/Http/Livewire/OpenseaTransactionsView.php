@@ -23,11 +23,15 @@ class OpenseaTransactionsView extends Component
 
     public function mount()
     {
-        $result = static::get_events_from_opensea($this->wallet);
-        $events = collect($result['asset_events'])->map(fn ($event) => static::parse_raw_event($event));
+        [
+            'asset_events' => $events,
+            'next'         => $cursor
+        ] = static::get_events_from_opensea($this->wallet);
+        $events = collect($events)->map(fn ($event) => static::parse_raw_event($event));
         ['uniques' => $uniques, 'existing' => $existing] = static::save_events($this->wallet, $events);
 
-        $this->events = $uniques->concat($existing)->sortByDesc('event_timestamp');
+        $this->events = $uniques->concat($existing);
+        $this->cursor = $cursor;
     }
 
     private static function get_events_from_opensea(
@@ -183,8 +187,10 @@ class OpenseaTransactionsView extends Component
         return new Collection(compact('existing', 'uniques'));
     }
 
-    public static function prepare_event_for_preview(string $wallet, Opensea $event): Collection
+    public static function prepare_event_for_preview(string $wallet, array|Opensea $event): Collection
     {
+        $event = is_array($event) ? new Opensea($event) : $event;
+
         $from_account = $event->accounts->get('from')
             ?: $event->accounts->get('seller')
             ?: $event->accounts->get('owner');
@@ -229,5 +235,23 @@ class OpenseaTransactionsView extends Component
     private static function gweiToEth(int $gwei): float
     {
         return $gwei / 1000000000000000000;
+    }
+
+    public function load_more_events(): void
+    {
+        if (!($this->events instanceof Collection && $this->events->count() >= 20 && $this->cursor)) return;
+
+        [
+            'asset_events' => $events,
+            'next'         => $cursor
+        ] = static::get_events_from_opensea($this->wallet, $this->cursor);
+
+        $events = collect($events)->map(fn ($event) => static::parse_raw_event($event));
+        ['uniques' => $uniques, 'existing' => $existing] = static::save_events($this->wallet, $events);
+
+        // dd($this->events->concat($uniques->concat($existing)));
+
+        $this->events = $this->events->concat($uniques->concat($existing));
+        $this->cursor = $cursor ?: null;
     }
 }
