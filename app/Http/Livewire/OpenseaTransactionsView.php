@@ -27,7 +27,7 @@ class OpenseaTransactionsView extends Component
         $events = collect($result['asset_events'])->map(fn ($event) => static::parse_raw_event($event));
         ['uniques' => $uniques, 'existing' => $existing] = static::save_events($this->wallet, $events);
 
-        $this->events = $uniques->concat($existing)->sortBy('event_timestamp');
+        $this->events = $uniques->concat($existing)->sortByDesc('event_timestamp');
     }
 
     private static function get_events_from_opensea(
@@ -154,6 +154,7 @@ class OpenseaTransactionsView extends Component
                     'asset' => [
                         'id'            => $asset['id'] ?? 0,
                         'name'          => $asset['name'] ?? 'Unknown',
+                        'token_id'      => $asset['token_id'] ?? null,
                         'description'   => $asset['description'] ?? 'No description',
                         'external_link' => $asset['external_link'] ?? null,
                         'permalink'     => $asset['permalink'] ?? null,
@@ -177,7 +178,7 @@ class OpenseaTransactionsView extends Component
 
         $uniques = $events
             ->filter(fn ($event) => !in_array($event['event_id'], $existing_ids))
-            ->map(fn ($event) => Opensea::create(array_merge($event, ['wallet' => $wallet])));
+            ->map(fn ($event) => Opensea::create(array_merge($event, ['wallet' => Str::lower($wallet)])));
 
         return new Collection(compact('existing', 'uniques'));
     }
@@ -190,7 +191,7 @@ class OpenseaTransactionsView extends Component
         $to_account   = $event->accounts->get('to') ?: $event->accounts->get('winner');
 
         return collect([
-            'name'       => $event->asset->get('name', null),
+            'name'       => $event->asset->get('name', 'Unnamed'),
             'image'      => optional(
                 $event->media->get('image'),
                 function (array $image): ?string {
@@ -212,6 +213,7 @@ class OpenseaTransactionsView extends Component
             ) === $wallet ?
                 'in' : null
             ),
+            'token_id'   => $event->asset->get('token_id'),
             'asset_id'   => $event->asset->get('id'),
             'event_id'   => $event->event_id,
             'from'       => $from_account,
