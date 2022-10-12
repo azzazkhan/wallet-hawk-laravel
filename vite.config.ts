@@ -9,7 +9,8 @@ export default defineConfig({
             input: [
                 'resources/css/tailwind.css',
                 'resources/scss/app.scss',
-                'resources/ts/main.ts'
+                'resources/ts/main.ts',
+                'resources/ts/index.tsx'
             ],
             refresh: true
         }),
