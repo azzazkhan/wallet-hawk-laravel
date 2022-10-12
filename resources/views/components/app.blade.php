@@ -36,6 +36,8 @@
     </main>
     @if (isset($footer)) {{ $footer }} @elseif (!$noFooter) <x-layout.footer /> @endif
     <script src="https://unpkg.com/flowbite@1.4.7/dist/flowbite.js"></script>
+    @viteReactRefresh
+    @vite(['resources/ts/main.ts', 'resources/ts/index.tsx'])
     {{ $scripts ?? null }}
     @livewireScripts
 </body>

@@ -1,0 +1,41 @@
+{
+    "compilerOptions": {
+        "incremental": true,
+        "target": "ES5",
+        "lib": [
+            "DOM",
+            "DOM.Iterable",
+            "ESNext"
+        ],
+        "jsx": "preserve",
+        "experimentalDecorators": true,
+        "reactNamespace": "React",
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "allowJs": true,
+        "checkJs": false,
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictPropertyInitialization": true,
+        "alwaysStrict": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "allowUnreachableCode": false,
+        "skipDefaultLibCheck": false,
+        "skipLibCheck": false,
+        "types": [
+            "vite/client"
+        ],
+        "baseUrl": "./resources/ts/"
+    },
+    "include": [
+        "resources/ts/**/*.ts",
+        "resources/ts/**/*.tsx"
+    ]
+}

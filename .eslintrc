@@ -1,0 +1,95 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "airbnb-typescript",
+        "airbnb",
+        "airbnb/hooks",
+        "prettier",
+        "airbnb-typescript-prettier",
+        "plugin:react/recommended",
+        "plugin:react-hooks/recommended",
+        "plugin:prettier/recommended",
+        "plugin:react/recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "ecmaVersion": "latest",
+        "sourceType": "module",
+        "project": "./tsconfig.json"
+    },
+    "plugins": [
+        "react",
+        "react-hooks",
+        "@typescript-eslint",
+        "prettier",
+        "jest"
+    ],
+    "rules": {
+        "spaced-comment": "error",
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "no-console": "off",
+        "no-plusplus": "off",
+        "no-param-reassign": "off",
+        "no-duplicate-imports": "error",
+        "react/jsx-props-no-spreading": "off",
+        "react/react-in-jsx-scope": "off",
+        "prettier/prettier": "error",
+        "@typescript-eslint/no-use-before-define": "error",
+        "react/jsx-filename-extension": [
+            "warn",
+            {
+                "extensions": [
+                    ".tsx",
+                    ".ts",
+                    ".js",
+                    ".jsx"
+                ]
+            }
+        ],
+        "import/extensions": [
+            "error",
+            "ignorePackages",
+            {
+                "ts": "never",
+                "tsx": "never"
+            }
+        ],
+        "no-shadow": "off",
+        "@typescript-eslint/no-shadow": "off",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "import/prefer-default-export": "off",
+        "react/prop-types": "off",
+        "react-hooks/rules-of-hooks": "error",
+        "react-hooks/exhaustive-deps": "warn",
+        "react/function-component-definition": [
+            "warn",
+            {
+                "namedComponents": "arrow-function"
+            }
+        ],
+        "react/jsx-fragments": "off",
+        "import/no-dynamic-require": "off",
+        "react/require-default-props": "off",
+        "jsx-a11y/click-events-have-key-events": "warn",
+        "jsx-a11y/img-redundant-alt": "warn",
+        "jsx-a11y/anchor-is-valid": "warn",
+        "jsx-a11y/label-has-associated-control": "warn",
+        "react/no-array-index-key": "off"
+    },
+    "settings": {
+        "import/resolver": {
+            "typescript": {}
+        }
+    }
+}

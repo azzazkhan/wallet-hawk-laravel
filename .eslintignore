@@ -1,0 +1,5 @@
+*.css
+*.svg
+vite.config.*
+tailwind.config.js
+public/**/*
