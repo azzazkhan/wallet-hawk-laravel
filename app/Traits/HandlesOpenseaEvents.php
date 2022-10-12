@@ -178,15 +178,15 @@ trait HandlesOpenseaEvents
         $to_account   = $event->accounts->get('to') ?: $event->accounts->get('winner');
 
         return collect([
-            'name'       => $event->asset->get('name', 'Unnamed'),
+            'name'       => $event->asset?->get('name', 'Unnamed'),
             'image'      => optional(
-                $event->media->get('image'),
+                $event->media?->get('image'),
                 function (array $image): ?string {
-                    return $image['original'] ?? $image['url'] ?? $image['preview'] ?? $image['thumbnail'] ?? null;
+                    return $image['url'] ?? $image['thumbnail'] ?? $image['original'] ?? $image['preview'] ?? null;
                 }
             ),
             'animation'  => optional(
-                $event->media->get('animation'),
+                $event->media?->get('animation'),
                 function (array $animation): ?string {
                     return $animation['original'] ?? $animation['url'] ?? null;
                 }
@@ -200,8 +200,8 @@ trait HandlesOpenseaEvents
             ) === $wallet ?
                 'in' : null
             ),
-            'token_id'       => $event->asset->get('token_id'),
-            'asset_id'       => $event->asset->get('id'),
+            'token_id'       => $event->asset?->get('token_id'),
+            'asset_id'       => $event->asset?->get('id'),
             'event_id'       => $event->event_id,
             'from'           => $from_account,
             'to'             => $to_account,
