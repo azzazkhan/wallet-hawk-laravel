@@ -39,9 +39,9 @@ const DirectionSelector: FC = () => {
                 id="direction"
                 className="h-10 text-sm bg-white border border-gray-200 rounded-md"
             >
-                {options.map(({ label, value, selected = false }, index) => {
+                {options.map(({ label, value }, index) => {
                     return (
-                        <option value={value} key={index} selected={selected}>
+                        <option value={value} key={index}>
                             {label}
                         </option>
                     );

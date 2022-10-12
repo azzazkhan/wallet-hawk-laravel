@@ -19,7 +19,7 @@
                 name="type"
                 id="{{ $id }}"
                 class="h-10 text-sm bg-white border border-gray-200 rounded-md"
-                wire:model="type"
+                wire:model.lazy="type"
             >
                 <option value="all">All</option>
                 <option value="created">Created</option>
@@ -44,7 +44,7 @@
                 id="{{ $id }}"
                 class="h-10 text-sm bg-white border border-gray-200 rounded-md"
                 name="start"
-                wire:model="start"
+                wire:model.lazy="start"
             />
         </div>
 
@@ -59,7 +59,7 @@
                 id="{{ $id }}"
                 class="h-10 text-sm bg-white border border-gray-200 rounded-md"
                 name="end"
-                wire:model="end"
+                wire:model.lazy="end"
             />
         </div>
 

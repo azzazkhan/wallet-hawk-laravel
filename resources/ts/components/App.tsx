@@ -1,11 +1,13 @@
-import React, { FC, Fragment } from 'react';
+import React, { FC } from 'react';
 import Filters from './Filters';
+import Table from './Table';
 
 const App: FC = () => {
     return (
-        <Fragment>
+        <div className="mt-10 space-y-4 ">
             <Filters />
-        </Fragment>
+            <Table />
+        </div>
     );
 };
 
