@@ -29,8 +29,7 @@
         "react",
         "react-hooks",
         "@typescript-eslint",
-        "prettier",
-        "jest"
+        "prettier"
     ],
     "rules": {
         "spaced-comment": "error",

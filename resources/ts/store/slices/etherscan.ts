@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-declare type Direction = 'in' | 'out';
+import { Direction, Transaction } from 'types/etherscan';
 
 interface State {
     filters: {
@@ -8,6 +7,7 @@ interface State {
         end: Nullable<number>;
         direction: Nullable<Direction>;
     };
+    items: Transaction[];
 }
 
 const initialState: State = {
@@ -15,7 +15,8 @@ const initialState: State = {
         start: null,
         end: null,
         direction: null
-    }
+    },
+    items: []
 };
 
 const etherscanSlice = createSlice({
@@ -30,10 +31,30 @@ const etherscanSlice = createSlice({
         },
         setDirection(state, action: PayloadAction<Direction>) {
             state.filters.direction = action.payload;
+        },
+        resetFilters(state) {
+            state.filters = { ...initialState.filters };
+        },
+        setItems(state, action: PayloadAction<Transaction[]>) {
+            state.items = action.payload;
+        },
+        addItems(state, action: PayloadAction<Transaction[]>) {
+            state.items.push(...action.payload);
+        },
+        clearItems(state) {
+            state.items = [];
         }
     }
 });
 
-export const { setStartDate, setEndDate, setDirection } = etherscanSlice.actions;
+export const {
+    setStartDate,
+    setEndDate,
+    setDirection,
+    resetFilters,
+    addItems,
+    setItems,
+    clearItems
+} = etherscanSlice.actions;
 
 export default etherscanSlice.reducer;
