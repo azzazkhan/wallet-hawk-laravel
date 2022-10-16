@@ -65,17 +65,29 @@
 
         <!-- Submit button -->
         <div class="flex-1"></div>
-        <button
-            type="submit"
-            class="inline-block h-10 px-6 ml-auto text-white transition-colors bg-blue-500 rounded-md hover:bg-blue-600"
-            wire:loading.class="cursor-wait pointer-events-none opacity-60"
-            wire:loading.attr="disabled"
-            wire:click="apply_filters"
-            wire:target="apply_filters"
-        >
-            <span wire:target="apply_filters" wire:loading.remove>Apply</span>
-            <span wire:target="apply_filters" wire:loading>Filtering</span>
-        </button>
+        <div class="flex items-center justify-between space-x-2">
+            @if ($filtered)
+                <button
+                    type="button"
+                    class="inline-block h-10 px-4 ml-auto text-black transition-colors bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                    wire:loading.class="cursor-wait !opacity-60"
+                    wire:click="clear_filters"
+                >
+                    Clear
+                </button>
+            @endif
+            <button
+                type="submit"
+                class="inline-block h-10 px-6 text-white transition-colors bg-blue-500 rounded-md hover:bg-blue-600"
+                wire:loading.class="cursor-wait pointer-events-none opacity-60"
+                wire:loading.attr="disabled"
+                wire:click="apply_filters"
+                wire:target="apply_filters"
+            >
+                <span wire:target="apply_filters" wire:loading.remove>Apply</span>
+                <span wire:target="apply_filters" wire:loading>Filtering</span>
+            </button>
+        </div>
     </div>
 
     {{-- Mobile filters modal trigger --}}
@@ -164,8 +176,17 @@
             </div>
         </div>
 
-        <!-- Filter apply and cancel buttons -->
+        <!-- Filter apply and clear buttons -->
         <div class="flex mt-6 space-x-2">
+            @if ($filtered)
+                <x-flowbite.modal.cancel
+                    wire:loading.class="cursor-wait !opacity-60"
+                    wire:click="clear_filters"
+                >
+                    Clear
+                </x-flowbite.modal.cancel>
+            @endif
+
             <button
                 data-modal-toggle="{{ $__modal_id }}"
                 type="submit"
@@ -178,10 +199,6 @@
                 <span wire:target="apply_filters" wire:loading.remove>Apply</span>
                 <span wire:target="apply_filters" wire:loading>Filtering</span>
             </button>
-
-            <x-flowbite.modal.cancel id="{{ $__modal_id }}">
-                Cancel
-            </x-flowbite.modal.cancel>
         </div>
     </x-flowbite.modal.popup>
 
@@ -190,7 +207,7 @@
     <div class="relative mt-10 overflow-x-auto shadow-md sm:rounded-lg">
         <div
             class="absolute top-0 bottom-0 left-0 right-0 z-20 bg-white bg-opacity-40 backdrop-blur-lg"
-            wire:loading
+            wire:loading wire:target="mount, clear_filters, load_more_events, apply_filters"
         >
             <div class="absolute text-4xl font-medium transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
                 Loading...

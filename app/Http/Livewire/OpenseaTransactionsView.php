@@ -20,7 +20,7 @@ class OpenseaTransactionsView extends Component
     public $type = null;
     public $start = null;
     public $end = null;
-    public bool $filtered = false;
+    public $filtered = false;
 
     public function render()
     {
@@ -84,6 +84,7 @@ class OpenseaTransactionsView extends Component
         $type = $this->type;
         $start = optional($this->start, fn ($date) => (int) (new Carbon($date))->format('U'));
         $end = optional($this->end, fn ($date) => (int) (new Carbon($date))->format('U'));
+        $this->filtered = false;
 
         // No filters added
         if (!$type && !$start && !$end) return;
@@ -103,8 +104,23 @@ class OpenseaTransactionsView extends Component
         $events = collect($events)->map(fn ($event) => static::parse_raw_event($event));
         ['uniques' => $uniques, 'existing' => $existing] = static::save_events($this->wallet, $events);
 
+        $this->filtered = true;
         $this->events = $uniques->concat($existing);
         $this->cursor = $cursor ?: null;
-        $this->filtered = true;
+    }
+
+    /**
+     * Clears our all filters and fetches initial events.
+     *
+     * @return void
+     */
+    public function clear_filters(): void
+    {
+        $this->start = null;
+        $this->end = null;
+        $this->type = null;
+        $this->filtered = false;
+
+        $this->mount();
     }
 }

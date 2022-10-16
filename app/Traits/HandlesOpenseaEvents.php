@@ -191,7 +191,7 @@ trait HandlesOpenseaEvents
                     return $animation['original'] ?? $animation['url'] ?? null;
                 }
             ),
-            'direction'  => optional(
+            'direction'  => preg_match('/(successful|transfer)/', $event->event_type) ? (optional(
                 $from_account,
                 fn (array $account) => $account['address']
             ) === $wallet ? 'out' : (optional(
@@ -199,21 +199,22 @@ trait HandlesOpenseaEvents
                 fn (array $account) => $account['address']
             ) === $wallet ?
                 'in' : null
-            ),
-            'token_id'       => $event->asset?->get('token_id'),
-            'asset_id'       => $event->asset?->get('id'),
-            'event_id'       => $event->event_id,
-            'from'           => $from_account,
-            'to'             => $to_account,
-            'from_account'   => $event->accounts->get('from'),
-            'to_account'     => $event->accounts->get('to'),
-            'seller_account' => $event->accounts->get('seller'),
-            'winner_account' => $event->accounts->get('winner'),
-            'owner_account'  => $event->accounts->get('owner'),
-            'schema'         => $event->schema,
-            'event_type'     => preg_replace('/(_|-)/', ' ', preg_replace('/(successful)/', 'sale', $event->event_type)),
-            'value'          => $event->value ? static::gweiToEth($event->value) : null,
-            'timestamp'      => new Carbon($event->event_timestamp),
+            )) : null,
+            'token_id'         => $event->asset?->get('token_id'),
+            'asset_id'         => $event->asset?->get('id'),
+            'event_id'         => $event->event_id,
+            'from'             => $from_account,
+            'to'               => $to_account,
+            'contract_address' => $event->contract?->get('address'),
+            'from_account'     => $event->accounts->get('from'),
+            'to_account'       => $event->accounts->get('to'),
+            'seller_account'   => $event->accounts->get('seller'),
+            'winner_account'   => $event->accounts->get('winner'),
+            'owner_account'    => $event->accounts->get('owner'),
+            'schema'           => $event->schema,
+            'event_type'       => preg_replace('/(_|-)/', ' ', preg_replace('/(successful)/', 'sale', $event->event_type)),
+            'value'            => $event->value ? static::gweiToEth($event->value) : null,
+            'timestamp'        => new Carbon($event->event_timestamp),
         ]);
     }
 

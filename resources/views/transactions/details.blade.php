@@ -1,22 +1,23 @@
 @php
     $data = App\Traits\HandlesOpenseaEvents::prepare_event_for_preview($wallet, $event);
 
-    $name        = $data->get('name');
-    $token_id    = $data->get('token_id');
-    $asset_id    = $data->get('asset_id');
-    $image       = $data->get('image');
-    $direction   = $data->get('direction');
-    $event_id    = $data->get('event_id');
-    $from        = $data->get('from_account');
-    $to          = $data->get('to_account');
-    $seller      = $data->get('seller_account');
-    $owner       = $data->get('owner_account');
-    $winner      = $data->get('winner_account');
-    $schema      = $data->get('schema');
-    $event_type  = $data->get('event_type');
-    $value       = $data->get('value');
-    $time_ago    = $data->get('timestamp')->diffForHumans();
-    $event_time  = $data->get('timestamp')->format('D jS M Y \a\t g:i:s A');
+    $name                = $data->get('name');
+    $token_id            = $data->get('token_id');
+    $contract_address    = $data->get('contract_address');
+    $asset_id            = $data->get('asset_id');
+    $image               = $data->get('image');
+    $direction           = $data->get('direction');
+    $event_id            = $data->get('event_id');
+    $from                = $data->get('from_account');
+    $to                  = $data->get('to_account');
+    $seller              = $data->get('seller_account');
+    $owner               = $data->get('owner_account');
+    $winner              = $data->get('winner_account');
+    $schema              = $data->get('schema');
+    $event_type          = $data->get('event_type');
+    $value               = $data->get('value');
+    $time_ago            = $data->get('timestamp')->diffForHumans();
+    $event_time          = $data->get('timestamp')->format('D jS M Y \a\t g:i:s A');
 @endphp
 
 <x-app>
@@ -37,14 +38,16 @@
                     </div>
                     <div class="flex flex-col flex-1 col-span-4 px-5 py-4 text-sm md:px-0">
                         <h1 class="py-2 text-3xl font-semibold">{{ $name }}</h1>
-                        <x-custom.pills.wrapper label="Contract Address:">
-                            <x-custom.pills.item class="overflow-hidden text-ellipsis whitespace-nowrap md:w-auto">
-                                {{ $event->contract->get('address') }}
-                            </x-custom.pills.item>
-                        </x-custom.pills.wrapper>
+                        @if ($event->contract)
+                            <x-custom.pills.wrapper label="Contract Address:">
+                                <x-custom.pills.item class="overflow-hidden text-ellipsis whitespace-nowrap md:w-auto">
+                                    {{ $event->contract?->get('address') }}
+                                </x-custom.pills.item>
+                            </x-custom.pills.wrapper>
+                        @endif
 
                         <x-custom.pills.wrapper noPush>
-                            @if ($event->value)
+                            @if ($value)
                                 <x-custom.pills.item
                                     tooltip="NFT Price"
                                     style="color: white; background-color: black;"
@@ -86,7 +89,7 @@
                             @if ($from)
                                 <x-custom.pills.item
                                     style="color: white; background-color: #0ea5e9;"
-                                    icon="fas fa-pen-nib"
+                                    icon="fas fa-wallet"
                                     tooltip="{{ $from['address'] }}"
                                 >
                                     From: {{ $from['user']['username'] ?? 'Unknown' }}
@@ -96,7 +99,7 @@
                             @if ($owner)
                                 <x-custom.pills.item
                                     style="color: white; background-color: #0ea5e9;"
-                                    icon="fas fa-pen-nib"
+                                    icon="fas fa-wallet"
                                     tooltip="{{ $owner['address'] }}"
                                 >
                                     Owner: {{ $owner['user']['username'] ?? 'Unknown' }}
@@ -106,7 +109,7 @@
                             @if ($seller)
                                 <x-custom.pills.item
                                     style="color: white; background-color: #0ea5e9;"
-                                    icon="fas fa-pen-nib"
+                                    icon="fas fa-wallet"
                                     tooltip="{{ $seller['address'] }}"
                                 >
                                     Seller: {{ $seller['user']['username'] ?? 'Unknown' }}
@@ -116,7 +119,7 @@
                             @if ($to)
                                 <x-custom.pills.item
                                     style="color: white; background-color: #ef4444;"
-                                    icon="fas fa-pen-nib"
+                                    icon="fas fa-wallet"
                                     tooltip="{{ $to['address'] }}"
                                 >
                                     To: {{ $to['user']['username'] ?? 'Unknown' }}
@@ -126,7 +129,7 @@
                             @if ($winner)
                                 <x-custom.pills.item
                                     style="color: white; background-color: #ef4444;"
-                                    icon="fas fa-pen-nib"
+                                    icon="fas fa-wallet"
                                     tooltip="{{ $winner['address'] }}"
                                 >
                                     Winner: {{ $winner['user']['username'] ?? 'Unknown' }}
