@@ -1,6 +1,10 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import classnames from 'classnames';
-import React, { FC, useState } from 'react';
+import { useAppDispatch, useAppSelector } from 'hooks';
+import moment from 'moment';
+import React, { ChangeEventHandler, FC, useCallback, useState } from 'react';
+import { setDirection, setStartDate, setEndDate } from 'store/slices/etherscan';
 
 declare type Direction = 'in' | 'out' | 'both';
 
@@ -24,11 +28,24 @@ const SchemaSelection: FC = () => {
 };
 
 const DirectionSelector: FC = () => {
+    const dispatch = useAppDispatch();
+    const value = useAppSelector((state) => state.etherscan.filters.direction);
+
     const options: SelectField<Direction> = [
         { label: 'Both', value: 'both', selected: true },
         { label: 'Incoming', value: 'in' },
         { label: 'Outgoing', value: 'out' }
     ];
+
+    const handleChange: ChangeEventHandler<HTMLSelectElement> = useCallback(
+        (event) => {
+            const { value } = event.target;
+
+            if (value === 'in' || value === 'out') dispatch(setDirection(value));
+            dispatch(setDirection(null));
+        },
+        [dispatch]
+    );
 
     return (
         <div className="flex items-center space-x-2">
@@ -37,7 +54,9 @@ const DirectionSelector: FC = () => {
             <select
                 name="direction"
                 id="direction"
+                onChange={handleChange}
                 className="h-10 text-sm bg-white border border-gray-200 rounded-md"
+                defaultValue={value || 'both'}
             >
                 {options.map(({ label, value }, index) => {
                     return (
@@ -52,6 +71,16 @@ const DirectionSelector: FC = () => {
 };
 
 const StartDateFilter: FC = () => {
+    const dispatch = useAppDispatch();
+    const value = useAppSelector((state) => state.etherscan.filters.start);
+
+    const handleChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+        (event) => {
+            dispatch(setStartDate(moment(event.target.value).unix()));
+        },
+        [dispatch]
+    );
+
     return (
         <div className="flex items-center space-x-2">
             <label htmlFor="start" className="text-sm font-medium">
@@ -60,6 +89,8 @@ const StartDateFilter: FC = () => {
             <input
                 type="date"
                 id="start"
+                onChange={handleChange}
+                value={value ? moment.unix(value).format('YYYY-MM-DD') : ''}
                 className="h-10 text-sm bg-white border border-gray-200 rounded-md"
             />
         </div>
@@ -67,6 +98,16 @@ const StartDateFilter: FC = () => {
 };
 
 const EndDateFilter: FC = () => {
+    const dispatch = useAppDispatch();
+    const value = useAppSelector((state) => state.etherscan.filters.end);
+
+    const handleChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+        (event) => {
+            dispatch(setEndDate(moment(event.target.value).unix()));
+        },
+        [dispatch]
+    );
+
     return (
         <div className="flex items-center space-x-2">
             <label htmlFor="end" className="text-sm font-medium">
@@ -75,6 +116,8 @@ const EndDateFilter: FC = () => {
             <input
                 type="date"
                 id="end"
+                onChange={handleChange}
+                value={value ? moment.unix(value).format('YYYY-MM-DD') : ''}
                 className="h-10 text-sm bg-white border border-gray-200 rounded-md"
             />
         </div>

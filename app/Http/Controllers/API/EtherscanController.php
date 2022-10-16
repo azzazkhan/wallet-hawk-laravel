@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 
 class EtherscanController extends Controller
 {
@@ -24,7 +25,8 @@ class EtherscanController extends Controller
         $page   = $request->input('page', 1);
 
         $transactions = static::fetch_transactions($wallet, $page);
-        $transactions = collect($transactions)->map(fn ($record) => static::parse_transaction($wallet, $record));
+        $transactions = collect($transactions)
+            ->map(fn ($record) => static::parse_transaction($wallet, $record));
 
         return response()
             ->json([

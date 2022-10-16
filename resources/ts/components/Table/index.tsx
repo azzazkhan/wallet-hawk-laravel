@@ -77,8 +77,13 @@ const Table: FC<Props> = ({ children, transactions }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {transactions?.map((transaction) => {
-                            return <Row transaction={transaction} key={transaction.hash} />;
+                        {transactions?.map((transaction, index) => {
+                            return (
+                                <Row
+                                    transaction={transaction}
+                                    key={`${transaction.hash}-${index}`}
+                                />
+                            );
                         })}
                         {children}
                     </tbody>

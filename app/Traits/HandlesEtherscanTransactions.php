@@ -16,8 +16,9 @@ trait HandlesEtherscanTransactions
                 'module'  => 'account',
                 'action'  => 'tokentx',
                 'address' => $wallet,
-                'offset'  => 20,
+                'offset'  => 1000,
                 'page'    => $page,
+                'sort'    => 'desc',
                 'apikey'  => config('hawk.etherscan.api_key')
             ]);
 
