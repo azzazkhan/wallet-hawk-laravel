@@ -23,8 +23,6 @@ const App: FC = () => {
     useEffect(() => {
         if (status === 'loading') return;
 
-        console.log('Use effect hook');
-
         dispatch(fetchTransactions({ address: params.get('wallet') || '', type: 'initial' }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

@@ -37,7 +37,7 @@ trait HandlesEtherscanTransactions
         $from      = Str::lower($transaction['from']);
         $to        = Str::lower($transaction['to']);
         $direction = $wallet === $from ? 'out' : ($wallet === $to ? 'in' : null);
-        $timestamp = (int) (new Carbon((int) $transaction['timeStamp']))->format('U');
+        $timestamp = ((int) (new Carbon((int) $transaction['timeStamp']))->format('U'));
         $hash      = $transaction['hash'];
         $name      = $transaction['tokenName'];
 

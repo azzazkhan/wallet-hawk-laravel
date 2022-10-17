@@ -50,8 +50,6 @@ export const fetchTransactions = createAsyncThunk(
             url = `${url}&page=${state.etherscan.page}`;
         }
 
-        console.log({ url });
-
         const response: AxiosResponse<APIResponse<Transaction[]>> = await axios.get(url);
 
         return { type, data: response.data.data };
@@ -73,25 +71,27 @@ const etherscanSlice = createSlice({
         },
         filterItems(state) {
             const { direction } = state.filters;
-            const start = state.filters.start ? moment(state.filters.start).unix() : 0;
-            const end = state.filters.end ? moment(state.filters.end).unix() : 0;
+            const start = state.filters.start ? moment(state.filters.start).unix() * 1000 : 0;
+            const end = state.filters.end ? moment(state.filters.end).unix() * 1000 : 0;
+            const startDate = start < end ? start : end;
+            const endDate = end > start ? end : start;
             let filtered = [...state.items];
 
-            if (direction)
+            console.log({ direction, start, end, startDate, endDate });
+
+            if (direction && (direction === 'in' || direction === 'out'))
                 filtered = filtered.filter((transaction) => transaction.direction === direction);
 
-            if (start || end) {
-                const startDate = start < end ? start : end;
-                const endDate = end > start ? end : start;
-
+            if (startDate || endDate)
                 filtered = filtered.filter((transaction) => {
-                    if (startDate && transaction.timestamp < startDate) return false;
+                    const timestamp = transaction.timestamp * 1000;
 
-                    if (endDate && transaction.timestamp > endDate) return false;
+                    if (startDate && !(timestamp >= startDate)) return false;
+
+                    if (endDate && !(timestamp <= endDate)) return false;
 
                     return true;
                 });
-            }
 
             state.filtered = [...filtered].sort(transactionSorter);
             state.filters.applied = true;
