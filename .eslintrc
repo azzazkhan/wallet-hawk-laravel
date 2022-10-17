@@ -84,7 +84,9 @@
         "jsx-a11y/img-redundant-alt": "warn",
         "jsx-a11y/anchor-is-valid": "warn",
         "jsx-a11y/label-has-associated-control": "warn",
-        "react/no-array-index-key": "off"
+        "react/no-array-index-key": "off",
+        "@typescript-eslint/naming-convention": "off",
+        "camelcase": "off"
     },
     "settings": {
         "import/resolver": {

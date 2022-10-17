@@ -1,10 +1,9 @@
 /* eslint-disable prefer-destructuring */
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AxiosResponse } from 'axios';
-import moment from 'moment';
 import { RootState } from 'store';
 import { Direction, Transaction } from 'types/etherscan';
-import { transactionSorter } from 'utils';
+import { filterTransactions, transactionSorter } from 'utils';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -70,30 +69,11 @@ const etherscanSlice = createSlice({
             state.filters.direction = action.payload;
         },
         filterItems(state) {
-            const { direction } = state.filters;
-            const start = state.filters.start ? moment(state.filters.start).unix() * 1000 : 0;
-            const end = state.filters.end ? moment(state.filters.end).unix() * 1000 : 0;
-            const startDate = start < end ? start : end;
-            const endDate = end > start ? end : start;
-            let filtered = [...state.items];
+            const { direction, start: start_date, end: end_date } = state.filters;
 
-            console.log({ direction, start, end, startDate, endDate });
-
-            if (direction && (direction === 'in' || direction === 'out'))
-                filtered = filtered.filter((transaction) => transaction.direction === direction);
-
-            if (startDate || endDate)
-                filtered = filtered.filter((transaction) => {
-                    const timestamp = transaction.timestamp * 1000;
-
-                    if (startDate && !(timestamp >= startDate)) return false;
-
-                    if (endDate && !(timestamp <= endDate)) return false;
-
-                    return true;
-                });
-
-            state.filtered = [...filtered].sort(transactionSorter);
+            state.filtered = [
+                ...filterTransactions(state.items, { direction, start_date, end_date })
+            ].sort(transactionSorter);
             state.filters.applied = true;
         },
         resetFilters(state) {
@@ -122,6 +102,15 @@ const etherscanSlice = createSlice({
                 state.items.push(...action.payload.data);
             } else {
                 state.items = action.payload.data;
+            }
+
+            if (state.filters.applied) {
+                const { direction, start: start_date, end: end_date } = state.filters;
+
+                state.filtered = [
+                    ...filterTransactions(state.items, { direction, start_date, end_date })
+                ].sort(transactionSorter);
+                return;
             }
 
             state.filtered = state.items.sort(transactionSorter);
