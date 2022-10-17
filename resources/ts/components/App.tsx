@@ -36,7 +36,7 @@ const App: FC = () => {
                 <button
                     type="button"
                     className={classnames(
-                        'flex items-center h-10 px-5 mx-auto my-10 font-medium text-white transition-all bg-blue-500 rounded-md cursor-pointer hover:bg-blue-700',
+                        'flex items-center space-x-2 h-10 px-5 mx-auto my-10 font-medium text-white transition-all bg-blue-500 rounded-md cursor-pointer hover:bg-blue-700',
                         {
                             'cursor-wait pointer-events-none opacity-60': status === 'loading'
                         }
@@ -44,7 +44,8 @@ const App: FC = () => {
                     disabled={status === 'loading'}
                     onClick={handlePagination}
                 >
-                    {status === 'loading' ? 'Loading' : 'Load More'}
+                    {status === 'loading' && <i className="text-sm fa-solid fa-sync fa-spin" />}
+                    <span>{status === 'loading' ? 'Loading' : 'Load More'}</span>
                 </button>
             )}
         </div>

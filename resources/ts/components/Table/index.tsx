@@ -2,6 +2,7 @@ import React, { FC, Fragment, ReactNode } from 'react';
 import classnames from 'classnames';
 import moment from 'moment';
 import { Transaction } from 'types/etherscan';
+import { useAppSelector } from 'hooks';
 
 interface Props {
     children?: ReactNode;
@@ -60,6 +61,7 @@ const Row: FC<{ transaction: Transaction }> = ({
 
 const Table: FC<Props> = ({ children, transactions }) => {
     const columns: string[] = ['Item', 'Direction', 'Quantity', 'From', 'To', 'Txn Fee', 'Time'];
+    const status = useAppSelector((state) => state.etherscan.status);
 
     return (
         <Fragment>
@@ -85,6 +87,26 @@ const Table: FC<Props> = ({ children, transactions }) => {
                                 />
                             );
                         })}
+                        {!transactions?.length && (
+                            <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <td
+                                    className={classnames(
+                                        'px-6 py-4 text-sm text-center text-muted',
+                                        {
+                                            'text-muted': status !== 'error',
+                                            'text-red-600 font-medium': status === 'error'
+                                        }
+                                    )}
+                                    colSpan={7}
+                                >
+                                    {status === 'loading' && 'The transactions are being loaded...'}
+                                    {status === 'success' && 'No transactions were found :('}
+                                    {status === 'idle' && 'Ready to fetch transactions!'}
+                                    {status === 'error' &&
+                                        'An error occurred while retrieving transactions!'}
+                                </td>
+                            </tr>
+                        )}
                         {children}
                     </tbody>
                 </table>
