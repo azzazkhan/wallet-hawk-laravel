@@ -2,17 +2,24 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import classnames from 'classnames';
 import { useAppDispatch, useAppSelector } from 'hooks';
-import moment from 'moment';
-import React, { ChangeEventHandler, FC, useCallback, useState } from 'react';
-import { setDirection, setStartDate, setEndDate } from 'store/slices/etherscan';
+import React, { ChangeEventHandler, FC, MouseEventHandler, useCallback, useMemo } from 'react';
+import {
+    setDirection,
+    setStartDate,
+    setEndDate,
+    filterItems,
+    resetFilters
+} from 'store/slices/etherscan';
 
 declare type Direction = 'in' | 'out' | 'both';
 
 const SchemaSelection: FC = () => {
+    const params = useMemo(() => new URLSearchParams(window.location.search), []);
+
     return (
         <div className="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
             <a
-                href="/transactions"
+                href={`/transactions?wallet=${params.get('wallet')}`}
                 className="flex items-center px-3 text-sm transition-colors hover:bg-blue-600 hover:text-white"
             >
                 ERC 1155 / ERC 721
@@ -41,8 +48,7 @@ const DirectionSelector: FC = () => {
         (event) => {
             const { value } = event.target;
 
-            if (value === 'in' || value === 'out') dispatch(setDirection(value));
-            dispatch(setDirection(null));
+            dispatch(setDirection(value === 'in' || value === 'out' ? value : null));
         },
         [dispatch]
     );
@@ -76,7 +82,7 @@ const StartDateFilter: FC = () => {
 
     const handleChange: ChangeEventHandler<HTMLInputElement> = useCallback(
         (event) => {
-            dispatch(setStartDate(moment(event.target.value).unix()));
+            dispatch(setStartDate(event.target.value));
         },
         [dispatch]
     );
@@ -90,7 +96,7 @@ const StartDateFilter: FC = () => {
                 type="date"
                 id="start"
                 onChange={handleChange}
-                value={value ? moment.unix(value).format('YYYY-MM-DD') : ''}
+                value={value || ''}
                 className="h-10 text-sm bg-white border border-gray-200 rounded-md"
             />
         </div>
@@ -103,7 +109,7 @@ const EndDateFilter: FC = () => {
 
     const handleChange: ChangeEventHandler<HTMLInputElement> = useCallback(
         (event) => {
-            dispatch(setEndDate(moment(event.target.value).unix()));
+            dispatch(setEndDate(event.target.value));
         },
         [dispatch]
     );
@@ -117,7 +123,7 @@ const EndDateFilter: FC = () => {
                 type="date"
                 id="end"
                 onChange={handleChange}
-                value={value ? moment.unix(value).format('YYYY-MM-DD') : ''}
+                value={value || ''}
                 className="h-10 text-sm bg-white border border-gray-200 rounded-md"
             />
         </div>
@@ -125,18 +131,57 @@ const EndDateFilter: FC = () => {
 };
 
 const ApplyFiltersButton: FC = () => {
-    const [loading, setLoading] = useState(false);
+    const dispatch = useAppDispatch();
+    const status = useAppSelector((state) => state.etherscan.status);
+    const items = useAppSelector((state) => state.etherscan.items.length);
+    const filtered = useAppSelector((state) => state.etherscan.filters.applied);
+
+    const filterHandler: MouseEventHandler<HTMLButtonElement> = (event) => {
+        event.preventDefault();
+
+        if (status === 'loading' || items === 0) return;
+
+        dispatch(filterItems());
+    };
+
+    const resetHandler: MouseEventHandler<HTMLButtonElement> = (event) => {
+        event.preventDefault();
+
+        if (!filtered || status === 'loading') return;
+
+        dispatch(resetFilters());
+    };
 
     return (
-        <button
-            type="button"
-            className={classnames(
-                'inline-block h-10 px-6 ml-auto text-white transition-colors bg-blue-500 rounded-md hover:bg-blue-600',
-                { 'cursor-wait pointer-events-none opacity-60': loading }
-            )}
-        >
-            {loading ? 'Filtering' : 'Apply'}
-        </button>
+        <div className="flex items-center space-x-2 ml-auto">
+            <button
+                type="button"
+                onClick={resetHandler}
+                className={classnames(
+                    'inline-block h-10 px-6 text-white transition-colors bg-gray-400 rounded-md hover:bg-gray-500',
+                    {
+                        'cursor-wait pointer-events-none opacity-60': !filtered
+                    }
+                )}
+                disabled={!filtered}
+            >
+                Reset
+            </button>
+            <button
+                type="button"
+                onClick={filterHandler}
+                className={classnames(
+                    'inline-block h-10 px-6 text-white transition-colors bg-blue-500 rounded-md hover:bg-blue-600',
+                    {
+                        'cursor-wait pointer-events-none opacity-60':
+                            status === 'loading' || items === 0
+                    }
+                )}
+                disabled={status === 'loading' || items === 0}
+            >
+                Apply
+            </button>
+        </div>
     );
 };
 

@@ -1,14 +1,19 @@
+/* eslint-disable prefer-destructuring */
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AxiosResponse } from 'axios';
+import moment from 'moment';
 import { RootState } from 'store';
 import { Direction, Transaction } from 'types/etherscan';
 import { transactionSorter } from 'utils';
 
+const ITEMS_PER_PAGE = 100;
+
 interface State {
     filters: {
-        start: Nullable<number>;
-        end: Nullable<number>;
-        direction: Nullable<Direction>;
+        start: Nullable<string>;
+        end: Nullable<string>;
+        direction: Nullable<Direction | 'both'>;
+        applied: boolean;
     };
     canPaginate: boolean;
     page: number;
@@ -21,7 +26,8 @@ const initialState: State = {
     filters: {
         start: null,
         end: null,
-        direction: null
+        direction: 'both',
+        applied: false
     },
     canPaginate: true,
     page: 2,
@@ -56,14 +62,39 @@ const etherscanSlice = createSlice({
     name: 'etherscan',
     initialState,
     reducers: {
-        setStartDate(state, action: PayloadAction<Nullable<number>>) {
+        setStartDate(state, action: PayloadAction<Nullable<string>>) {
             state.filters.start = action.payload;
         },
-        setEndDate(state, action: PayloadAction<Nullable<number>>) {
+        setEndDate(state, action: PayloadAction<Nullable<string>>) {
             state.filters.end = action.payload;
         },
         setDirection(state, action: PayloadAction<Nullable<Direction>>) {
             state.filters.direction = action.payload;
+        },
+        filterItems(state) {
+            const { direction } = state.filters;
+            const start = state.filters.start ? moment(state.filters.start).unix() : 0;
+            const end = state.filters.end ? moment(state.filters.end).unix() : 0;
+            let filtered = [...state.items];
+
+            if (direction)
+                filtered = filtered.filter((transaction) => transaction.direction === direction);
+
+            if (start || end) {
+                const startDate = start < end ? start : end;
+                const endDate = end > start ? end : start;
+
+                filtered = filtered.filter((transaction) => {
+                    if (startDate && transaction.timestamp < startDate) return false;
+
+                    if (endDate && transaction.timestamp > endDate) return false;
+
+                    return true;
+                });
+            }
+
+            state.filtered = [...filtered].sort(transactionSorter);
+            state.filters.applied = true;
         },
         resetFilters(state) {
             state.filters = { ...initialState.filters };
@@ -84,7 +115,7 @@ const etherscanSlice = createSlice({
         });
         builder.addCase(fetchTransactions.fulfilled, (state, action) => {
             state.status = 'success';
-            const itemCount = state.items.length;
+            state.canPaginate = action.payload.data.length >= ITEMS_PER_PAGE;
 
             if (action.payload.type === 'pagination') {
                 state.page += 1;
@@ -94,7 +125,6 @@ const etherscanSlice = createSlice({
             }
 
             state.filtered = state.items.sort(transactionSorter);
-            state.canPaginate = state.items.length > itemCount;
         });
         builder.addCase(fetchTransactions.rejected, (state) => {
             state.status = 'error';
@@ -102,7 +132,14 @@ const etherscanSlice = createSlice({
     }
 });
 
-export const { setStartDate, setEndDate, setDirection, resetFilters, addItems, setItems } =
-    etherscanSlice.actions;
+export const {
+    setStartDate,
+    setEndDate,
+    setDirection,
+    filterItems,
+    resetFilters,
+    addItems,
+    setItems
+} = etherscanSlice.actions;
 
 export default etherscanSlice.reducer;
