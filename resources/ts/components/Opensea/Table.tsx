@@ -1,4 +1,4 @@
-import React, { FC, Fragment, ReactNode } from 'react';
+import React, { FC, Fragment, ReactNode, useMemo } from 'react';
 import classnames from 'classnames';
 import moment from 'moment';
 import { useAppSelector } from 'hooks';
@@ -10,8 +10,9 @@ interface Props {
 }
 
 const Row: FC<{ event: Event }> = ({
-    event: { image, name, direction, from, to, schema, event_type, value, timestamp }
+    event: { image, name, direction, from, to, schema, event_type, value, timestamp, event_id }
 }) => {
+    const params = useMemo(() => new URLSearchParams(window.location.search), []);
     const trimAddress = (address: string) => {
         return `${address.substring(0, 4)}...${address.substring(
             address.length - 4,
@@ -101,6 +102,15 @@ const Row: FC<{ event: Event }> = ({
                 title={moment(timestamp).format('Do MMM YYYY \\a\\t HH:mm:ss')}
             >
                 {moment(timestamp).fromNow()}
+            </td>
+
+            <td className="px-6 py-4">
+                <a
+                    href={`transactions/${params.get('address')}/${event_id}`}
+                    className="inline-flex items-center h-8 px-3 text-xs font-medium text-blue-500 transition-colors border border-blue-500 rounded-md whitespace-nowrap hover:text-white hover:bg-blue-500"
+                >
+                    Details
+                </a>
             </td>
         </tr>
     );

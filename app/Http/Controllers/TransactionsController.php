@@ -27,6 +27,7 @@ class TransactionsController extends Controller
             ->where('wallet', $address)
             ->where('event_id', $event_id)
             ->firstOrFail();
+        $wallet = $address;
 
         return view('transactions.details', compact('event', 'wallet'));
     }
