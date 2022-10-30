@@ -6,7 +6,7 @@ import axios from 'axios';
  * CSRF token as a header based on the value of the "XSRF" token cookie.
  */
 window.axios = axios.create({
-    baseURL: `${import.meta.env.VITE_APP_URL}/api`,
+    baseURL: '/api',
     headers: {
         'X-Requested-With': 'XMLHttpRequest',
         'Content-Type': 'application/json',

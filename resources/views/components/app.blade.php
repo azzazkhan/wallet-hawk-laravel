@@ -26,10 +26,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/solid.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/brands.min.css" />
 
-    @livewireStyles
     {{ $styles ?? null }}
 </head>
 <body>
+    <div id="root"></div>
     @if (isset($header)) {{ $header }} @elseif (!$noHeader) <x-layout.header /> @endif
     <main class="flex flex-col flex-1">
         {{ $slot }}
@@ -39,6 +39,5 @@
     @viteReactRefresh
     @vite(['resources/ts/main.ts', 'resources/ts/index.tsx'])
     {{ $scripts ?? null }}
-    @livewireScripts
 </body>
 </html>

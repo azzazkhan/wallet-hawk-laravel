@@ -1,11 +1,23 @@
 /* eslint-disable camelcase */
 import moment from 'moment';
 import { Direction, Transaction } from 'types/etherscan';
+import { Event } from 'types/opensea';
 
 export const transactionSorter = (a: Transaction, b: Transaction): number => {
     if (a.timestamp > b.timestamp) return -1;
 
     if (b.timestamp > a.timestamp) return 1;
+
+    return 0;
+};
+
+export const eventSorter = (a: Event, b: Event): number => {
+    const a_timestamp = moment(a.timestamp).unix();
+    const b_timestamp = moment(b.timestamp).unix();
+
+    if (a_timestamp > b_timestamp) return -1;
+
+    if (b_timestamp > a_timestamp) return 1;
 
     return 0;
 };

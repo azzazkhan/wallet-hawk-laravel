@@ -5,7 +5,7 @@
             <p class="text-lg font-light md:text-xl md:leading-relaxed">
                 Enter an Ethereum address below to look at transaction history in a human readable format.
             </p>
-            <x-forms.search class="pt-4 shadow-2xl lg:pt-0" />
+            <x-forms.search class="pt-4 shadow-2xl lg:pt-0" action="{{ route('transactions') }}" />
             <img
                 src="{{ asset('assets/img/hawk-artwork-updated.png') }}"
                 class="mx-auto w-auto h-[250px]"

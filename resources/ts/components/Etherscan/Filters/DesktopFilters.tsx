@@ -19,7 +19,7 @@ const SchemaSelection: FC = () => {
     return (
         <div className="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
             <a
-                href={`/transactions?wallet=${params.get('wallet')}`}
+                href={`/transactions?address=${params.get('address')}`}
                 className="flex items-center px-3 text-sm transition-colors hover:bg-blue-600 hover:text-white"
             >
                 ERC 1155 / ERC 721

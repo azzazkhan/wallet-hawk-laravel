@@ -1,36 +1,35 @@
-import { useAppDispatch, useAppSelector } from 'hooks';
 import React, { FC, MouseEventHandler, useEffect, useMemo } from 'react';
-import { fetchTransactions } from 'store/slices/etherscan';
+import { useAppDispatch, useAppSelector } from 'hooks';
+import { fetchEvents } from 'store/slices/opensea';
 import classnames from 'classnames';
 import Filters from './Filters';
 import Table from './Table';
 
-const App: FC = () => {
+const Opensea: FC = () => {
     const dispatch = useAppDispatch();
     const params = useMemo(() => new URLSearchParams(window.location.search), []);
 
-    const transactions = useAppSelector((state) => state.etherscan.filtered);
-    const status = useAppSelector((state) => state.etherscan.status);
-    const canPaginate = useAppSelector((state) => state.etherscan.canPaginate);
+    const events = useAppSelector((state) => state.opensea.items);
+    const status = useAppSelector((state) => state.opensea.status);
+    const canPaginate = useAppSelector((state) => !!state.opensea.cursor);
 
     const handlePagination: MouseEventHandler<HTMLButtonElement> = (event) => {
         event.preventDefault();
         if (status === 'loading') return;
-
-        dispatch(fetchTransactions({ address: params.get('wallet') || '', type: 'pagination' }));
+        dispatch(fetchEvents({ address: params.get('address') || '', type: 'pagination' }));
     };
 
     useEffect(() => {
         if (status === 'loading') return;
 
-        dispatch(fetchTransactions({ address: params.get('wallet') || '', type: 'initial' }));
+        dispatch(fetchEvents({ address: params.get('address') || '', type: 'initial' }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
-        <div className="mt-10 space-y-4 ">
+        <div className="mt-10 space-y-4">
             <Filters />
-            <Table transactions={transactions} />
+            <Table events={events} />
 
             {canPaginate && (
                 <button
@@ -52,4 +51,4 @@ const App: FC = () => {
     );
 };
 
-export default App;
+export default Opensea;

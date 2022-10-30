@@ -2,12 +2,10 @@
     <x-layout.page>
         <x-forms.search class="md:w-[400px] mr-auto flex-start" small />
 
-        @if (request()->has('schema') && strtolower(request()->query('schema')) == 'erc20')
-            {{-- <livewire:etherscan-table /> --}}
-            <div id="root"></div>
+        @if (Str::lower(request()->query('schema', 'none')) == 'erc20')
+            <div id="etherscan_module"></div>
         @else
-            <livewire:opensea-transactions-view />
+            <div id="opensea_module"></div>
         @endif
-
     </x-layout.page>
 </x-app>

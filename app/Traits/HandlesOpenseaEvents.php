@@ -26,9 +26,7 @@ trait HandlesOpenseaEvents
         $query = array_merge($query, optional($date_start, fn ($occurred_after) => ['occurred_after' => (new Carbon($occurred_after))->format('Y-m-d\T00:00:00')]) ?: []);
         $query = array_merge($query, optional($date_end, fn ($occurred_before) => ['occurred_before' => (new Carbon($occurred_before))->format('Y-m-d\T00:00:00')]) ?: []);
 
-        Log::debug('', $query);
-
-        $response = Http::retry(3, 300)
+        $response = Http::retry(3, 500)
             ->acceptJson()
             ->withHeaders([
                 "X-API-KEY" => config('hawk.opensea.api_key')

@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react';
 import tsConfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+    server: {
+        hmr: {
+            host: '127.0.0.1'
+        }
+    },
     plugins: [
         laravel({
             input: [

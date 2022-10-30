@@ -19,7 +19,7 @@ Route::view('/faqs', 'faqs')->name('faqs');
 Route::post('/subscribe', 'SubscriptionsController@subscribe')->name('subscribe');
 
 Route::get('/transactions', 'TransactionsController@index')->name('transactions');
-Route::get('transactions/{wallet}/{event_id}', 'TransactionsController@details')->name('transactions.single');
+Route::get('transactions/{address}/{event_id}', 'TransactionsController@details')->name('transactions.single');
 
 Route::get('/downloads/erc20', 'CsvExportController@etherscan')->name('transactions.download.etherscan');
 Route::get('/downloads/erc721-erc1155', 'CsvExportController@opensea')->name('transactions.download.opensea');

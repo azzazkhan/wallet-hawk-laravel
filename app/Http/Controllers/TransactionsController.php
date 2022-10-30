@@ -11,20 +11,20 @@ class TransactionsController extends Controller
     public function index(Request $request)
     {
         $request->validate([
-            'wallet' => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
+            'address' => ['required', 'string', 'min:40', 'regex:/^0x[a-fA-F0-9]{40}$/'],
         ]);
 
         return view('transactions.list');
     }
 
-    public function details(Request $request, string $wallet, string $event_id)
+    public function details(Request $request, string $address, string $event_id)
     {
         // Invalid wallet/event ID provided
-        if (!preg_match('/^0x[a-fA-F0-9]{40}$/', $wallet) || !is_numeric($event_id))
+        if (!preg_match('/^0x[a-fA-F0-9]{40}$/', $address) || !is_numeric($event_id))
             throw new NotFoundHttpException();
 
         $event = Opensea::query()
-            ->where('wallet', $wallet)
+            ->where('wallet', $address)
             ->where('event_id', $event_id)
             ->firstOrFail();
 

@@ -1,9 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { etherscan } from './slices';
+import { etherscan, opensea } from './slices';
 
 const store = configureStore({
     reducer: {
-        etherscan
+        etherscan,
+        opensea
     }
 });
 
