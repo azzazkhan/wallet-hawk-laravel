@@ -3,7 +3,8 @@
 import classnames from 'classnames';
 import { useAppDispatch, useAppSelector } from 'hooks';
 import React, { ChangeEventHandler, FC, MouseEventHandler, useCallback, useMemo } from 'react';
-import { setStartDate, setEndDate, fetchEvents } from 'store/slices/opensea';
+import { setStartDate, setEndDate, fetchEvents, setEventType } from 'store/slices/opensea';
+import { EventType } from 'types/opensea';
 
 const SchemaSelection: FC = () => {
     const params = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -22,6 +23,52 @@ const SchemaSelection: FC = () => {
             >
                 ERC20
             </a>
+        </div>
+    );
+};
+
+const EventTypeSelector: FC = () => {
+    const dispatch = useAppDispatch();
+    const value = useAppSelector((state) => state.opensea.filters.type);
+
+    const options: SelectField<EventType | 'all'> = [
+        { label: 'All', value: 'all', selected: true },
+        { label: 'Approved', value: 'approve' },
+        { label: 'Bid Entered', value: 'bid_entered' },
+        { label: 'Bid Withdrawn', value: 'bid_withdrawn' },
+        { label: 'Cancelled', value: 'cancelled' },
+        { label: 'Created', value: 'created' },
+        { label: 'Offer Entered', value: 'offer_entered' },
+        { label: 'Sale', value: 'successful' },
+        { label: 'Transfer', value: 'transfer' }
+    ];
+
+    const handleChange: ChangeEventHandler<HTMLSelectElement> = useCallback(
+        (event) => {
+            dispatch(setEventType(event.target.value as unknown as EventType));
+        },
+        [dispatch]
+    );
+
+    return (
+        <div className="flex items-center space-x-2">
+            <label htmlFor="event_type">Event Type</label>
+
+            <select
+                name="event_type"
+                id="event_type"
+                onChange={handleChange}
+                className="h-10 text-sm bg-white border border-gray-200 rounded-md"
+                defaultValue={value || 'both'}
+            >
+                {options.map(({ label, value }, index) => {
+                    return (
+                        <option value={value} key={index}>
+                            {label}
+                        </option>
+                    );
+                })}
+            </select>
         </div>
     );
 };
@@ -139,6 +186,7 @@ const DesktopFilters: FC = () => {
     return (
         <div className="sticky z-50 items-center hidden h-16 px-5 space-x-6 bg-white rounded-lg shadow top-4 md:flex">
             <SchemaSelection />
+            <EventTypeSelector />
             <StartDateFilter />
             <EndDateFilter />
             <div className="flex-1" />

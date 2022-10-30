@@ -1,6 +1,6 @@
 declare type Direction = 'in' | 'out';
 declare type Schema = 'erc1155' | 'erc721';
-declare type EventType =
+export declare type EventType =
     | 'created'
     | 'successful'
     | 'cancelled'

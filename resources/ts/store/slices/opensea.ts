@@ -3,14 +3,14 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AxiosResponse } from 'axios';
 import moment from 'moment';
 import { RootState } from 'store';
-import { Event } from 'types/opensea';
+import { Event, EventType } from 'types/opensea';
 import { eventSorter } from 'utils';
 
 interface State {
     filters: {
         start: Nullable<string>;
         end: Nullable<string>;
-        type: Nullable<string>;
+        type: Nullable<EventType>;
         applied: boolean;
     };
     cursor: Nullable<string>;
@@ -80,7 +80,7 @@ const openseaSlice = createSlice({
         setEndDate(state, action: PayloadAction<Nullable<string>>) {
             state.filters.end = action.payload;
         },
-        setEventType(state, action: PayloadAction<Nullable<string>>) {
+        setEventType(state, action: PayloadAction<Nullable<EventType>>) {
             state.filters.type = action.payload;
         },
         resetFilters(state) {
@@ -93,6 +93,7 @@ const openseaSlice = createSlice({
         });
         builder.addCase(fetchEvents.fulfilled, (state, action) => {
             state.status = 'success';
+            console.log(action.payload.events);
 
             if (action.payload.type === 'pagination') state.items.push(...action.payload.events);
             else state.items = action.payload.events;
