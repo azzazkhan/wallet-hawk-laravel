@@ -6,7 +6,6 @@ use App\Models\Opensea;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 trait HandlesOpenseaEvents
@@ -189,15 +188,13 @@ trait HandlesOpenseaEvents
                     return $animation['original'] ?? $animation['url'] ?? null;
                 }
             ),
-            'direction'  => preg_match('/(successful|transfer)/', $event->event_type) ? (optional(
-                $from_account,
-                fn (array $account) => $account['address']
-            ) === $wallet ? 'out' : (optional(
-                $to_account,
-                fn (array $account) => $account['address']
-            ) === $wallet ?
-                'in' : null
-            )) : null,
+            'direction'  => preg_match('/(successful|transfer)/', $event->event_type)
+                ? static::get_token_direction(
+                    address: Str::lower($wallet),
+                    from: optional($from_account, fn ($from) => Str::lower($from['address'])),
+                    to: optional($to_account, fn ($to) => Str::lower($to['address'])),
+                )
+                : null,
             'token_id'         => $event->asset?->get('token_id'),
             'asset_id'         => $event->asset?->get('id'),
             'event_id'         => $event->event_id,
@@ -219,5 +216,22 @@ trait HandlesOpenseaEvents
     private static function gweiToEth(int $gwei): float
     {
         return $gwei / 1000000000000000000;
+    }
+
+    private static function get_token_direction(
+        string $address,
+        ?string $from = null,
+        ?string $to = null
+    ): ?string {
+        $direction = match ($address) {
+            $from => 'out',
+            $to   => 'in',
+            default => null
+        };
+
+        logger()->debug('Determining direction of asset token', [
+            ...compact('address', 'from', 'to', 'direction')
+        ]);
+        return $direction;
     }
 }

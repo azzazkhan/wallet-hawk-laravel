@@ -59,7 +59,7 @@ class OpenseaController extends Controller
 
         $events = $uniques->concat($existing)->map(function (Opensea $event) use ($request) {
             return static::prepare_event_for_preview($request->query('address'), $event);
-        });
+        })->values();
 
         return response()
             ->json([

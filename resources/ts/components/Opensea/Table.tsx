@@ -3,6 +3,7 @@ import classnames from 'classnames';
 import moment from 'moment';
 import { useAppSelector } from 'hooks';
 import { Event } from 'types/opensea';
+import { Tooltip } from 'flowbite-react';
 
 interface Props {
     children?: ReactNode;
@@ -64,18 +65,22 @@ const Row: FC<{ event: Event }> = ({
             {/* <td className="px-6 py-4">{quantity}</td> */}
 
             {/* From */}
-            <td className="px-6 py-4" title={from?.address || ''}>
-                {from?.address ? (
-                    trimAddress(from.address)
+            <td className="px-6 py-4">
+                {from ? (
+                    <Tooltip content={from.address}>
+                        <span>{trimAddress(from.address)}</span>
+                    </Tooltip>
                 ) : (
                     <span className="block font-bold text-center" />
                 )}
             </td>
 
             {/* To */}
-            <td className="px-6 py-4" title={to?.address || ''}>
-                {to?.address ? (
-                    trimAddress(to.address)
+            <td className="px-6 py-4">
+                {to ? (
+                    <Tooltip content={to.address}>
+                        <span>{trimAddress(to.address)}</span>
+                    </Tooltip>
                 ) : (
                     <span className="block font-bold text-center" />
                 )}
@@ -146,29 +151,37 @@ const Table: FC<Props> = ({ children, events }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {events?.map((event) => {
-                            return <Row event={event} key={event.event_id} />;
-                        })}
-                        {!events?.length && (
-                            <tr className="bg-white border-b hover:bg-gray-50 ">
+                        {status !== 'success' && (
+                            <tr className="bg-white border-b">
                                 <td
-                                    className={classnames(
-                                        'px-6 py-4 text-sm text-center text-muted',
-                                        {
-                                            'text-muted': status !== 'error',
-                                            'text-red-600 font-medium': status === 'error'
-                                        }
-                                    )}
+                                    className={classnames('px-6 py-4 text-sm text-center', {
+                                        'text-gray-600': status !== 'error',
+                                        'text-red-600 font-medium': status === 'error'
+                                    })}
                                     colSpan={9}
                                 >
                                     {status === 'loading' && 'The events are being loaded...'}
-                                    {status === 'success' && 'No events were found :('}
                                     {status === 'idle' && 'Ready to fetch events!'}
                                     {status === 'error' &&
                                         'An error occurred while retrieving events!'}
                                 </td>
                             </tr>
                         )}
+                        {status === 'success' &&
+                            (events?.length ? (
+                                events.map((event) => {
+                                    return <Row event={event} key={event.event_id} />;
+                                })
+                            ) : (
+                                <tr className="bg-white border-b">
+                                    <td
+                                        className="px-6 py-4 text-sm text-center text-gray-600"
+                                        colSpan={9}
+                                    >
+                                        No events were found :(
+                                    </td>
+                                </tr>
+                            ))}
                         {children}
                     </tbody>
                 </table>

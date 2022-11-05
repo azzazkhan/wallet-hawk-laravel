@@ -13,6 +13,7 @@ interface State {
         end: Nullable<string>;
         direction: Nullable<Direction | 'both'>;
         applied: boolean;
+        opened: boolean;
     };
     canPaginate: boolean;
     page: number;
@@ -26,7 +27,8 @@ const initialState: State = {
         start: null,
         end: null,
         direction: 'both',
-        applied: false
+        applied: false,
+        opened: false
     },
     canPaginate: true,
     page: 2,
@@ -87,6 +89,9 @@ const etherscanSlice = createSlice({
         addItems(state, action: PayloadAction<Transaction[]>) {
             state.items = [...state.items, ...action.payload];
             state.filtered = [...state.items].sort(transactionSorter);
+        },
+        toggleFilterModal(state, action: PayloadAction<Nullable<boolean>>) {
+            state.filters.opened = action.payload || !state.filters.opened;
         }
     },
     extraReducers(builder) {
@@ -128,7 +133,8 @@ export const {
     filterItems,
     resetFilters,
     addItems,
-    setItems
+    setItems,
+    toggleFilterModal
 } = etherscanSlice.actions;
 
 export default etherscanSlice.reducer;

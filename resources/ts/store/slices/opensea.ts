@@ -12,6 +12,7 @@ interface State {
         end: Nullable<string>;
         type: Nullable<EventType>;
         applied: boolean;
+        opened: boolean;
     };
     cursor: Nullable<string>;
     status: AsyncState;
@@ -63,7 +64,8 @@ const initialState: State = {
         start: null,
         end: null,
         type: null,
-        applied: false
+        applied: false,
+        opened: false
     },
     cursor: null,
     status: 'idle',
@@ -85,6 +87,9 @@ const openseaSlice = createSlice({
         },
         resetFilters(state) {
             state.filters = { ...initialState.filters };
+        },
+        toggleFilterModal(state, action: PayloadAction<Nullable<boolean>>) {
+            state.filters.opened = action.payload || !state.filters.opened;
         }
     },
     extraReducers(builder) {
@@ -109,6 +114,7 @@ const openseaSlice = createSlice({
     }
 });
 
-export const { setStartDate, setEndDate, setEventType, resetFilters } = openseaSlice.actions;
+export const { setStartDate, setEndDate, setEventType, resetFilters, toggleFilterModal } =
+    openseaSlice.actions;
 
 export default openseaSlice.reducer;

@@ -1,29 +1,44 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import classnames from 'classnames';
+import { Dropdown } from 'flowbite-react';
 import { useAppDispatch, useAppSelector } from 'hooks';
 import React, { ChangeEventHandler, FC, MouseEventHandler, useCallback, useMemo } from 'react';
 import { setStartDate, setEndDate, fetchEvents, setEventType } from 'store/slices/opensea';
 import { EventType } from 'types/opensea';
 
+declare type Token = 'etherscan' | 'opensea';
+
 const SchemaSelection: FC = () => {
     const params = useMemo(() => new URLSearchParams(window.location.search), []);
 
+    const handleClick = (scheme: Token) => {
+        return (): void => {
+            const current_scheme = (params.get('schema') || '').toLowerCase() as Nullable<'erc20'>;
+            const query: Record<string, string | null> = {};
+
+            if (scheme === 'etherscan' && current_scheme === 'erc20') return;
+            if (scheme === 'opensea' && current_scheme !== 'erc20') return;
+
+            query.schema = scheme === 'etherscan' ? 'erc20' : null;
+            query.address = params.get('address');
+
+            const query_string = Object.entries(query)
+                .map(([key, value]) => {
+                    return value ? `${key}=${value}` : null;
+                })
+                .filter((query) => Boolean(query))
+                .join('&');
+
+            window.location.href = `${window.location.pathname}?${query_string}`;
+        };
+    };
+
     return (
-        <div className="flex items-stretch h-10 overflow-hidden border border-gray-200 rounded-md">
-            <a
-                href="#"
-                className="flex items-center px-3 text-sm text-gray-500 bg-gray-200 cursor-not-allowed pointer-events-none"
-            >
-                ERC 1155 / ERC 721
-            </a>
-            <a
-                href={`/transactions?schema=ERC20&address=${params.get('address')}`}
-                className="flex items-center px-3 text-sm transition-colors hover:bg-blue-600 hover:text-white"
-            >
-                ERC20
-            </a>
-        </div>
+        <Dropdown label="Token" inline>
+            <Dropdown.Item onClick={handleClick('opensea')}>ERC1155 / ERC721</Dropdown.Item>
+            <Dropdown.Item onClick={handleClick('etherscan')}>ERC20</Dropdown.Item>
+        </Dropdown>
     );
 };
 
@@ -132,13 +147,12 @@ const ApplyFiltersButton: FC = () => {
     const params = useMemo(() => new URLSearchParams(window.location.search), []);
 
     const status = useAppSelector((state) => state.opensea.status);
-    const items = useAppSelector((state) => state.opensea.items.length);
     const filtered = useAppSelector((state) => state.opensea.filters.applied);
 
     const filterHandler: MouseEventHandler<HTMLButtonElement> = (event) => {
         event.preventDefault();
 
-        if (status === 'loading' || items === 0) return;
+        if (status === 'loading') return;
 
         dispatch(fetchEvents({ address: params.get('address') || '', type: 'filter' }));
     };

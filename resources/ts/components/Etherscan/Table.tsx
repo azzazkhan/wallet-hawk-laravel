@@ -3,6 +3,7 @@ import classnames from 'classnames';
 import moment from 'moment';
 import { Transaction } from 'types/etherscan';
 import { useAppSelector } from 'hooks';
+import { Tooltip } from 'flowbite-react';
 
 interface Props {
     children?: ReactNode;
@@ -42,12 +43,28 @@ const Row: FC<{ transaction: Transaction }> = ({
                 )}
             </td>
             <td className="px-6 py-4">{quantity}</td>
-            <td className="px-6 py-4" title={from}>
-                {trimAddress(from)}
+            {/* From */}
+            <td className="px-6 py-4">
+                {from ? (
+                    <Tooltip content={from}>
+                        <span>{trimAddress(from)}</span>
+                    </Tooltip>
+                ) : (
+                    <span className="block font-bold text-center" />
+                )}
             </td>
-            <td className="px-6 py-4" title={to}>
-                {trimAddress(to)}
+
+            {/* To */}
+            <td className="px-6 py-4">
+                {to ? (
+                    <Tooltip content={to}>
+                        <span>{trimAddress(to)}</span>
+                    </Tooltip>
+                ) : (
+                    <span className="block font-bold text-center" />
+                )}
             </td>
+
             <td className="px-6 py-4">{fee}</td>
             <td
                 className="px-6 py-4"

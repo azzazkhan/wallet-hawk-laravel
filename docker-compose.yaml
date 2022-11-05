@@ -19,7 +19,7 @@ services:
         depends_on:
             - vite
             - database
-            - redis
+            # - redis
         networks:
             - laravel
         restart: unless-stopped
@@ -55,7 +55,7 @@ services:
             MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
         volumes:
             - 'database:/var/lib/mysql'
-        container_name: cogni-database
+        container_name: hawk-database
         restart: unless-stopped
         networks:
             - laravel
@@ -65,23 +65,23 @@ services:
             timeout: 5s
 
     # Redis for caching and queue processing
-    redis:
-        image: 'redis:alpine'
-        ports:
-            - '${REDIS_PORT:-6379}:6379'
-        volumes:
-            - 'redis:/data'
-        networks:
-            - laravel
-        healthcheck:
-            test: [ "CMD", "redis-cli", "ping" ]
-            retries: 3
-            timeout: 5s
+    # redis:
+    #     image: 'redis:alpine'
+    #     ports:
+    #         - '${REDIS_PORT:-6379}:6379'
+    #     volumes:
+    #         - 'redis:/data'
+    #     networks:
+    #         - laravel
+    #     healthcheck:
+    #         test: [ "CMD", "redis-cli", "ping" ]
+    #         retries: 3
+    #         timeout: 5s
 
     # phpMyAdmin for database management
     phpmyadmin:
         image: phpmyadmin
-        container_name: cogni-phpmyadmin
+        container_name: hawk-phpmyadmin
         restart: always
         depends_on:
             - database

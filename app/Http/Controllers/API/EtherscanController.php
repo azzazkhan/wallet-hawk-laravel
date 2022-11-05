@@ -32,7 +32,7 @@ class EtherscanController extends Controller
             ->json([
                 'success' => true,
                 'status'  => Response::HTTP_OK,
-                'data'    => $transactions,
+                'data'    => $transactions->values(),
             ]);
     }
 }
